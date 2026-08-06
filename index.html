@@ -802,16 +802,21 @@ let pendingRollover = null; // 待确认的rollover数据
 
 function showRolloverConfirm(undoneCount, dayData){
   pendingRollover = dayData;
+  const prevCount = state.rolloverTasks.length;
+  const totalCount = undoneCount + prevCount;
   const modal = document.getElementById('checkoutModal');
   const msg = document.getElementById('modalMsg');
   const btns = document.querySelector('#checkoutModal .modal-btns');
-  msg.innerHTML = `📌 <strong>${undoneCount}</strong> 个未完成任务将滚入<br><strong>明天（Day ${state.currentDay+1}）</strong>的学习列表顶部。<br><br><span style="color:var(--sub);font-size:.8rem">明天打开页面就能看到它们，不用担心漏掉。</span>`;
+  let detail = '';
+  if(prevCount>0){
+    detail = `<br><span style="color:var(--sub);font-size:.82rem">今日 ${undoneCount} 个 + 此前积压 ${prevCount} 个 = 共 ${totalCount} 个</span>`;
+  }
+  msg.innerHTML = `📌 <strong>${totalCount}</strong> 个未完成任务将滚入<br><strong>明天（Day ${state.currentDay+1}）</strong>的学习列表顶部。${detail}<br><br><span style="color:var(--sub);font-size:.8rem">明天打开页面就能看到它们，不用担心漏掉。</span>`;
   btns.innerHTML = `<button class="btn btn-primary" id="btnRolloverOK">我知道了</button>`;
   document.getElementById('btnRolloverOK').onclick = ()=>{
     modal.style.display = 'none';
     if(pendingRollover) rolloverUndone(pendingRollover);
     pendingRollover = null;
-    // 恢复模态按钮
     btns.innerHTML = `
       <button class="btn btn-outline" id="btnNotDone">没学完</button>
       <button class="btn btn-primary" id="btnDone">学完了！</button>
