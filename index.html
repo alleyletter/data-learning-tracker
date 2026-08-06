@@ -798,6 +798,28 @@ function getCompletedDaysInPhase(phase, completedDays){
 // ==================== 渲染 ====================
 let state = loadState();
 let reviewMode = null; // null=正常模式, number=正在复习第X天
+let pendingRollover = null; // 待确认的rollover数据
+
+function showRolloverConfirm(undoneCount, dayData){
+  pendingRollover = dayData;
+  const modal = document.getElementById('checkoutModal');
+  const msg = document.getElementById('modalMsg');
+  const btns = document.querySelector('#checkoutModal .modal-btns');
+  msg.innerHTML = `📌 <strong>${undoneCount}</strong> 个未完成任务将滚入<br><strong>明天（Day ${state.currentDay+1}）</strong>的学习列表顶部。<br><br><span style="color:var(--sub);font-size:.8rem">明天打开页面就能看到它们，不用担心漏掉。</span>`;
+  btns.innerHTML = `<button class="btn btn-primary" id="btnRolloverOK">我知道了</button>`;
+  document.getElementById('btnRolloverOK').onclick = ()=>{
+    modal.style.display = 'none';
+    if(pendingRollover) rolloverUndone(pendingRollover);
+    pendingRollover = null;
+    // 恢复模态按钮
+    btns.innerHTML = `
+      <button class="btn btn-outline" id="btnNotDone">没学完</button>
+      <button class="btn btn-primary" id="btnDone">学完了！</button>
+    `;
+    msg.textContent = '';
+  };
+  modal.style.display = 'flex';
+}
 
 function renderAll(){
   if(reviewMode!==null) return; // 复习模式下不刷新
@@ -1307,8 +1329,10 @@ function checkout(){
   };
 
   document.getElementById('btnNotDone').onclick = ()=>{
-    rolloverUndone(d);
     modal.style.display = 'none';
+    // 确认: 哪些任务会滚到明天
+    const undoneCount = d.tasks.filter((t,i)=>state.todayTaskStatus[`${state.currentDay}-${i}`]!=='done').length;
+    showRolloverConfirm(undoneCount, d);
   };
 }
 
@@ -1346,7 +1370,9 @@ function openQuiz(quiz){
   // 跳过按钮
   document.getElementById('btnQuizSkip').onclick = ()=>{
     modal.style.display = 'none';
-    rolloverUndone(getDayData(state.currentDay));
+    const d = getDayData(state.currentDay);
+    const undoneCount = d ? d.tasks.length : 0;
+    showRolloverConfirm(undoneCount, d);
   };
 
   // 提交按钮
@@ -1426,7 +1452,9 @@ function gradeQuiz(){
 
 function retryQuiz(){
   document.getElementById('quizModal').style.display = 'none';
-  rolloverUndone(getDayData(state.currentDay));
+  const d = getDayData(state.currentDay);
+  const undoneCount = d ? d.tasks.length : 0;
+  showRolloverConfirm(undoneCount, d);
 }
 
 function completeDay(){
