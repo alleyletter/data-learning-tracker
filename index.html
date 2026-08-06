@@ -108,6 +108,32 @@ header .subtitle{color:var(--sub);font-size:.85rem}
 .review-list-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;font-size:.84rem;cursor:pointer;transition:background .15s}
 .review-list-item:hover{background:var(--bg)}
 .review-list-item.current{color:var(--sub);cursor:default;font-weight:600}
+/* 阶段预览 */
+.phase-row{cursor:pointer;user-select:none;transition:background .15s}
+.phase-row:hover{background:var(--bg)}
+.phase-days{margin-top:4px;padding-left:12px}
+.phase-day-item{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-size:.82rem;cursor:pointer;transition:background .15s;color:var(--sub)}
+.phase-day-item:hover{background:var(--bg);color:var(--text)}
+.phase-day-item.completed{color:var(--done)}
+.phase-day-item.current{color:var(--accent);font-weight:600;background:rgba(79,143,247,.06)}
+.phase-day-item .day-icons{font-size:.7rem;margin-left:auto}
+/* 里程碑 */
+.streak-milestone{text-align:center;font-size:.82rem;padding:8px;margin-top:6px;border-radius:6px;background:rgba(243,156,18,.06);color:var(--warn);animation:fadeInUp .5s ease}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* 勾选弹跳 */
+@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+.task-checkbox.bouncing{animation:bounce .25s ease}
+/* 计时器环 */
+.timer-ring-wrap{display:flex;align-items:center;justify-content:center;gap:14px;margin:12px 0}
+.timer-ring{position:relative;width:60px;height:60px}
+.timer-ring svg{transform:rotate(-90deg)}
+.timer-ring-bg{fill:none;stroke:var(--border);stroke-width:4}
+.timer-ring-fill{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .8s linear}
+.timer-ring-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums}
+/* 撒花 */
+.confetti-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200;overflow:hidden}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall 1.2s ease-out forwards}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}100%{opacity:0;transform:translateY(400px) rotate(720deg) scale(.3)}}
 </style>
 </head>
 <body>
@@ -127,7 +153,11 @@ header .subtitle{color:var(--sub);font-size:.85rem}
     </div>
     <div class="phase-bar" id="phaseBar"></div>
     <div id="reviewEntry"></div>
+    <div id="streakMilestone"></div>
   </div>
+
+  <!-- 撒花容器 -->
+  <div id="confettiContainer" class="confetti-container"></div>
 
   <!-- 复习提示条 -->
   <div id="reviewBanner"></div>
@@ -742,6 +772,19 @@ function getPhaseColor(phase){
   return colors[phase]||'phase1';
 }
 
+function getDayEstimate(){
+  const d = getDayData(state.currentDay);
+  if(!d) return 60;
+  let mins = 0;
+  d.tasks.forEach(t=>{
+    if(t.time){
+      const m = parseInt(t.time);
+      if(!isNaN(m)) mins+=m;
+    }
+  });
+  return mins||60;
+}
+
 function getDaysInPhase(phase){
   return CURRICULUM.filter(d=>d.phase===phase).length;
 }
@@ -815,6 +858,15 @@ function renderDashboard(){
   document.getElementById('stat-streak').textContent = state.streak;
   document.getElementById('stat-done').textContent = Object.keys(state.completedDays).length;
   document.getElementById('stat-rate').textContent = Math.round(Object.keys(state.completedDays).length/60*100)+'%';
+
+  // 连续打卡里程碑
+  const ms = document.getElementById('streakMilestone');
+  const s = state.streak||0;
+  if(s>=30) ms.innerHTML = '<div class="streak-milestone">🏆 连续30天！这件事你已经比90%的人强了</div>';
+  else if(s>=14) ms.innerHTML = '<div class="streak-milestone">🔥🔥🔥 坚持14天，习惯已经养成了</div>';
+  else if(s>=7) ms.innerHTML = '<div class="streak-milestone">🔥🔥 连续7天，不容易</div>';
+  else if(s>=3) ms.innerHTML = '<div class="streak-milestone">🔥 开始进入状态了</div>';
+  else ms.innerHTML = '';
 
   // 阶段进度条
   const bar = document.getElementById('phaseBar');
@@ -903,7 +955,17 @@ function renderDailyContent(){
   }
 
   // 操作按钮
-  html += `<div class="timer-display" id="timerDisplay" style="display:none">⏱️ 学习中...</div>`;
+  // 计时器环
+  html += `<div class="timer-ring-wrap" id="timerRingWrap" style="display:none">
+    <div class="timer-ring">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle class="timer-ring-bg" cx="30" cy="30" r="26"/>
+        <circle class="timer-ring-fill" id="timerRingFill" cx="30" cy="30" r="26" stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
+      </svg>
+      <div class="timer-ring-text" id="timerRingText">0:00</div>
+    </div>
+    <span style="font-size:.8rem;color:var(--sub)">目标约${getDayEstimate()}分钟</span>
+  </div>`;
   html += `<div class="actions-row">`;
   if(!state.todayCheckedIn){
     html += `<button class="btn btn-primary btn-block" id="btnCheckin" onclick="checkin()">📖 开始学习</button>`;
@@ -951,26 +1013,65 @@ function renderTaskItem(t, key, isRollover){
 
 function renderPhaseNav(){
   const container = document.getElementById('phaseList');
+  // 构建阶段→天数映射
+  const phaseDays = {};
+  CURRICULUM.forEach(d=>{if(!phaseDays[d.phase])phaseDays[d.phase]=[];phaseDays[d.phase].push(d.day);});
   let html = '';
   for(let p=1;p<=4;p++){
-    const total = getDaysInPhase(p);
-    const done = getCompletedDaysInPhase(p, state.completedDays);
+    const total = (phaseDays[p]||[]).length;
+    const done = (phaseDays[p]||[]).filter(dn=>state.completedDays[dn]).length;
     const isCurrent = getDayData(state.currentDay)?.phase === p;
-    html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+    const expanded = window._expandedPhase === p;
+    html += `<div class="phase-row" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)" onclick="togglePhaseExpand(${p})">
+      <span style="font-size:.7rem;transition:transform .2s;display:inline-block;${expanded?'transform:rotate(90deg)':''}">▶</span>
       <span class="badge badge-${getPhaseColor(p)}">${getPhaseName(p)}</span>
       <span style="flex:1;font-size:.85rem">${done}/${total} 天完成</span>
       ${isCurrent ? '<span style="color:var(--accent);font-size:.75rem">← 当前</span>' : ''}
     </div>`;
+    if(expanded){
+      html += `<div class="phase-days">`;
+      (phaseDays[p]||[]).forEach(dn=>{
+        const dd = getDayData(dn);
+        if(!dd) return;
+        const doneDay = !!state.completedDays[dn];
+        const isCur = dn===state.currentDay;
+        const hasTut = !!TUTORIALS[dn];
+        const hasQuiz = !!QUIZZES[dn];
+        let icons = '';
+        if(hasTut) icons+='📖';
+        if(hasQuiz) icons+='📝';
+        html += `<div class="phase-day-item${doneDay?' completed':''}${isCur?' current':''}" onclick="event.stopPropagation();enterPreviewOrReview(${dn})">
+          Day ${dn} ${doneDay?'✅':''} ${dd.title}
+          <span class="day-icons">${icons}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
   }
   container.innerHTML = html;
+}
+
+function togglePhaseExpand(p){
+  window._expandedPhase = (window._expandedPhase===p) ? 0 : p;
+  renderPhaseNav();
+}
+
+function enterPreviewOrReview(dayNum){
+  reviewMode = dayNum;
+  state.todayCheckedIn = false;
+  state.todayTaskStatus = {};
+  renderAllReview();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ==================== 复习模式 ====================
 function renderReviewBanner(){
   const el = document.getElementById('reviewBanner');
   if(reviewMode===null){el.innerHTML='';return;}
-  el.innerHTML = `<div class="review-banner">
-    <span class="label">📖 你正在复习 Day ${reviewMode}：${(getDayData(reviewMode)||{}).title||''}</span>
+  const isCompleted = !!state.completedDays[reviewMode];
+  const modeLabel = isCompleted ? '📖 你正在复习' : '🔍 预览模式（还未学到）';
+  el.innerHTML = `<div class="review-banner" style="${isCompleted?'':'background:rgba(79,143,247,.08);border-color:rgba(79,143,247,.25)'}">
+    <span class="label" style="${isCompleted?'':'color:var(--accent)'}">${modeLabel} Day ${reviewMode}：${(getDayData(reviewMode)||{}).title||''}</span>
     <button class="btn btn-outline btn-sm" onclick="exitReviewMode()">← 返回今天（Day ${state.currentDay}）</button>
   </div>`;
 }
@@ -1102,6 +1203,27 @@ function toggleTutorial(btn){
   }
 }
 
+// ==================== 撒花庆祝 ====================
+function fireConfetti(){
+  const container = document.getElementById('confettiContainer');
+  const colors = ['#4f8ff7','#2ecc71','#f39c12','#e74c3c','#a855f7','#06b6d4','#f97316'];
+  const frag = document.createDocumentFragment();
+  for(let i=0;i<40;i++){
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = (Math.random()*100)+'%';
+    piece.style.top = -(Math.random()*30+10)+'px';
+    piece.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.animationDelay = Math.random()*0.3+'s';
+    piece.style.animationDuration = (1+Math.random()*1.2)+'s';
+    piece.style.width = (6+Math.random()*8)+'px';
+    piece.style.height = (6+Math.random()*8)+'px';
+    frag.appendChild(piece);
+  }
+  container.appendChild(frag);
+  setTimeout(()=>{container.innerHTML='';},1800);
+}
+
 // ==================== 交互 ====================
 function toggleTask(key){
   if(!state.todayCheckedIn) return; // 还没签到,不能操作
@@ -1111,6 +1233,9 @@ function toggleTask(key){
     state.todayTaskStatus[key] = 'done';
   }
   saveState(state);
+  // 弹跳动画
+  const cb = document.getElementById('cb-'+key);
+  if(cb){cb.classList.add('bouncing');setTimeout(()=>cb.classList.remove('bouncing'),250);}
   renderDailyContent();
 }
 
@@ -1119,19 +1244,30 @@ function checkin(){
   state.streak = (state.streak||0) + 1;
   saveState(state);
   renderDailyContent();
-  // 启动计时器
-  let seconds = 0;
-  const timerEl = document.getElementById('timerDisplay');
-  if(timerEl){
-    timerEl.style.display = 'block';
-    const interval = setInterval(()=>{
-      seconds++;
-      const m = Math.floor(seconds/60);
-      const s = seconds%60;
-      timerEl.textContent = `⏱️ 学习中: ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  // 启动计时器环
+  const wrap = document.getElementById('timerRingWrap');
+  const fill = document.getElementById('timerRingFill');
+  const text = document.getElementById('timerRingText');
+  if(wrap&&fill&&text){
+    wrap.style.display = 'flex';
+    const totalSec = getDayEstimate()*60;
+    const circum = 163.36; // 2*π*26
+    fill.style.strokeDasharray = circum;
+    fill.style.strokeDashoffset = circum;
+    let elapsed = 0;
+    state._timerInterval = setInterval(()=>{
+      elapsed++;
+      const m = Math.floor(elapsed/60);
+      const s = elapsed%60;
+      text.textContent = `${m}:${String(s).padStart(2,'0')}`;
+      // 环的填充比例
+      const ratio = Math.min(elapsed/totalSec, 1);
+      fill.style.strokeDashoffset = circum*(1-ratio);
+      // 超时变色
+      if(ratio>=1) fill.style.stroke = 'var(--done)';
     },1000);
-    timerEl._interval = interval;
   }
+  renderDashboard();
 }
 
 function checkout(){
@@ -1146,11 +1282,9 @@ function checkout(){
   });
 
   // 停止计时器
-  const timerEl = document.getElementById('timerDisplay');
-  if(timerEl && timerEl._interval){
-    clearInterval(timerEl._interval);
-    timerEl.style.display = 'none';
-  }
+  if(state._timerInterval){clearInterval(state._timerInterval);state._timerInterval=null;}
+  const wrap = document.getElementById('timerRingWrap');
+  if(wrap) wrap.style.display = 'none';
 
   // 弹窗
   const modal = document.getElementById('checkoutModal');
@@ -1282,7 +1416,7 @@ function gradeQuiz(){
 
   const btnsDiv = document.getElementById('quizBtns');
   if(passed){
-    btnsDiv.innerHTML = `<button class="btn btn-primary" onclick="completeDay();document.getElementById('quizModal').style.display='none'">继续下一天 →</button>`;
+    btnsDiv.innerHTML = `<button class="btn btn-primary" onclick="fireConfetti();setTimeout(()=>{completeDay();document.getElementById('quizModal').style.display='none'},200)">继续下一天 →</button>`;
   }else{
     btnsDiv.innerHTML = `<button class="btn btn-outline" onclick="retryQuiz()">重新学习,稍后再测</button>`;
   }
