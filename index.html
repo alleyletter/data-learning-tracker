@@ -88,6 +88,26 @@ header .subtitle{color:var(--sub);font-size:.85rem}
 .quiz-score{font-size:2rem;font-weight:800;text-align:center;margin:12px 0}
 .quiz-explain{font-size:.8rem;color:var(--sub);margin-top:4px;padding:8px;background:rgba(79,143,247,.06);border-radius:6px}
 .modal-wide{max-width:560px!important;max-height:85vh;overflow-y:auto}
+/* 教程折叠面板 */
+.tutorial-toggle{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;margin-bottom:12px;background:rgba(79,143,247,.06);border:1px dashed var(--accent);border-radius:8px;color:var(--accent);font-size:.88rem;font-weight:600;cursor:pointer;text-align:left;transition:all .15s}
+.tutorial-toggle:hover{background:rgba(79,143,247,.12)}
+.tutorial-toggle .arrow{transition:transform .2s;font-size:.7rem}
+.tutorial-toggle.open .arrow{transform:rotate(90deg)}
+.tutorial-body{padding:0 0 12px 0}
+.tutorial-section{margin-bottom:14px}
+.tutorial-section h4{font-size:.9rem;color:var(--text);margin-bottom:6px;padding-left:4px;border-left:3px solid var(--accent)}
+.tutorial-section p{font-size:.85rem;color:var(--sub);line-height:1.7;margin:0;padding-left:7px}
+.tutorial-section p code{background:rgba(79,143,247,.1);color:var(--accent);padding:1px 6px;border-radius:3px;font-size:.82rem}
+.tutorial-section p strong{color:var(--text)}
+/* 复习模式 */
+.review-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.25);border-radius:8px;font-size:.85rem;flex-wrap:wrap}
+.review-banner .label{color:var(--warn);font-weight:600}
+.review-entry-btn{display:block;width:100%;text-align:center;padding:8px;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:6px;color:var(--sub);font-size:.82rem;cursor:pointer;transition:all .15s}
+.review-entry-btn:hover{border-color:var(--accent);color:var(--accent)}
+.review-list{margin-top:8px}
+.review-list-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;font-size:.84rem;cursor:pointer;transition:background .15s}
+.review-list-item:hover{background:var(--bg)}
+.review-list-item.current{color:var(--sub);cursor:default;font-weight:600}
 </style>
 </head>
 <body>
@@ -106,7 +126,11 @@ header .subtitle{color:var(--sub);font-size:.85rem}
       <div class="stat-item"><div class="stat-value" id="stat-rate">0%</div><div class="stat-label">完成率</div></div>
     </div>
     <div class="phase-bar" id="phaseBar"></div>
+    <div id="reviewEntry"></div>
   </div>
+
+  <!-- 复习提示条 -->
+  <div id="reviewBanner"></div>
 
   <!-- 当日课程 -->
   <div id="dailyContent"></div>
@@ -553,6 +577,106 @@ const QUIZZES = {
 ]}
 };
 
+// ==================== 保姆级教程数据 ====================
+const TUTORIALS = {
+1:[
+{title:'功能区是什么',body:'打开 Excel，顶部那一排选项卡就是**功能区**。默认有 7 个：\n**开始**：复制粘贴、字体、对齐、条件格式、表格样式——最常用的都在这\n**插入**：数据透视表、图表、切片器、迷你图——"往表格里加东西"的都在这\n**页面布局**：打印设置、主题颜色——平时不太用\n**公式**：所有函数按类别列出来了——以后找函数来这里翻\n**数据**：筛选、排序、去重、分列、数据验证——数据分析最重要的选项卡\n**审阅**：批注、保护工作表——协作时用\n**视图**：冻结窗格、拆分窗口——表格太大时用来固定表头\n现在挨个点一遍，每个花 1 分钟扫一眼。不用记位置，知道"大概有这个功能"就行。'},
+{title:'快速访问工具栏',body:'左上角那一小排图标就是**快速访问工具栏**。默认只有保存、撤销、重做。\n**怎么加按钮**：在功能区任意位置，右键一个你常用的功能 → 选择"添加到快速访问工具栏"\n**建议现在就加这 3 个**：\n1. 保存（已经有了，跳过）\n2. 撤销（已经有了，跳过）\n3. **筛选**——在"数据"选项卡里找到"筛选"按钮 → 右键 → 添加到快速访问工具栏\n加完之后你会发现一个小漏斗图标出现在左上角，以后点筛选不用每次都切到"数据"选项卡了。'},
+{title:'工作簿与工作表',body:'一个 Excel 文件 = 一个**工作簿**（Workbook）\n底部 Sheet1、Sheet2、Sheet3 = **工作表**（Worksheet）\n**现在就动手做**：\n1. 双击底部 Sheet1 标签 → 输入"数据源" → 回车\n2. 点 Sheet1 旁边的 **+** 号 → 新建一个工作表 → 双击改名 → "分析结果"\n3. 再点 + → 改名 → "图表"\n4. 右键"分析结果"标签 → "工作表标签颜色" → 选绿色\n5. 右键"图表"标签 → 选蓝色\n6. 试试拖拽工作表标签调整顺序\n**要点**：以后拿到任何数据，先把原始数据放"数据源"，分析过程放"分析结果"，图表放"图表"。养成这个习惯，再大的表格也不会乱。'}
+],
+2:[
+{title:'三种数据类型',body:'Excel 会自动识别你输入的内容属于什么类型。理解这三类非常重要——以后筛选、排序、透视表出错，80% 是因为类型不对。\n**文本（字符串）**：默认**左对齐**。输入 `123`（英文引号开头）→ 左对齐，绿色三角在左上角。文本不能直接参与数学运算。\n**数字**：默认**右对齐**。输入 `123`（不加引号）→ 右对齐。可以计算。\n**日期**：默认**右对齐**。输入 `2026-08-06` → 右对齐，但内部存储的是一个数字（从 1900-01-01 开始算的天数）。这个设计让你可以用日期做加减——"两个日期差了几天"直接用减法。\n**现在就动手**：在 A1 输入 `\'123`（带英文单引号开头），A2 输入 `123`，A3 输入 `2026-08-06`。观察它们的对齐方向和单元格格式。'},
+{title:'单元格格式设置',body:'右键任意单元格 → **设置单元格格式**（或 Ctrl+1）→ 弹出窗口有多个选项卡：\n**数字**标签页下：\n- 数值：设置小数位数、千分位分隔符\n- 货币：¥ 符号 + 小数位\n- 日期：选择显示格式（2026/8/6 还是 2026年8月6日）\n- 百分比：0.5 → 50%\n- 文本：强制把数字当文本处理（不参与计算）\n**动手试试**：在 A2（数字 123）上 Ctrl+1 → 分别切换到货币、百分比、日期，观察显示的变化。注意：改的是"显示方式"，底层值还是 123。'},
+{title:'Ctrl+E 快速填充',body:'这是 Excel 里最被低估的功能。用来代替手动的"拆列""合并""提取"。\n**怎么用**：\n1. 假设 A 列有一堆"张三13800138000"\n2. 在 B1 手打 "张三"，B2 手打 "李四"（对应 A2 的名字部分）\n3. 选中 B1:B2 → 按 **Ctrl+E** → Excel 自动识别你在"提取名字"，给你补完下面所有行\n4. 在 C1 手打 "13800138000" → C2 手打下一行的号码 → 选中 C1:C2 → Ctrl+E\n**适用场景**：拆分姓名+手机号、格式化日期、提取身份证里的出生日期、合并两列内容。比手动分列快得多，而且能处理不规则格式。'}
+],
+3:[
+{title:'自动筛选',body:'选中你的数据区域（注意要有表头行）→ 数据 → **筛选**（或者左上角快速工具栏的漏斗图标）→ 每个列表头出现下拉三角。\n**文本筛选**：点下拉三角 → "文本筛选" → 等于/不等于/开头是/结尾是/包含\n**数字筛选**：点下拉三角 → "数字筛选" → 大于/小于/介于/前10项\n**多条件叠加**：先筛一列，再在结果上筛另一列——两个条件是"AND"关系（都要满足）\n**清除筛选**：数据 → 清除。或者点那个漏斗图标关掉再打开。\n**练习**：拿你的靓号数据——先筛出价格>100的，再在位数列筛"5"——得到"价格>100的5位靓号"。'},
+{title:'按颜色筛选',body:'如果你之前给某些单元格填了色（比如价格>180标红），筛选下拉里会多一个选项：**按颜色筛选**。\n**你的审核场景**：把违规内容标红→审核员点一下"按颜色筛选→红色"→所有违规项在一页上，可以批量处理。比肉眼扫快得多。'},
+{title:'自定义排序',body:'数据 → **排序** → 弹出窗口 → 添加条件：\n- 主要关键字：选择"位数"，次序"升序"\n- 点"添加条件"→ 次要关键字：选择"价格"，次序"降序"\n结果：先按位数排（5位→6位→7位→8位），同位数内部按价格从大到小排。\n**关键认知**：排序改变的是行的物理顺序。跟筛选不同——筛选只是"隐藏"，排序是"重新排列"。如果你要发给别人看的数据，先排好序再发，看起来专业得多。'}
+],
+4:[
+{title:'删除重复项',body:'数据 → **删除重复项** → 勾选判断重复的列 → 确定。\n**单条件去重**：只勾"用户ID"→ 同一个ID出现多次的，保留第一行，后面的全删。\n**多条件去重**：勾"用户ID"+ "活动日期"→ 同一个用户在同一天的多条记录才算重复。\n**重要提醒**：去重是**不可逆**的。操作前先复制一份原始数据（右键工作表标签→移动或复制→勾选"建立副本"）。发奖励去重时尤其要小心——不要把不同活动的参与记录给去了。'},
+{title:'文本分列',body:'数据 → **分列** → 两步走：\n**第一步选类型**：\n- "分隔符号"：用逗号/空格/顿号/斜杠等分隔 → 适合"48360054,张三,2026-08-06"这种\n- "固定宽度"：每段长度一样 → 适合"48360054张三20260806"（前8位ID+名字+8位日期）\n**第二步设分隔符**：如果是分隔符号模式，勾选对应的分隔符（或输入自定义符号如"-"）；如果是固定宽度模式，在预览区点击设分隔线。\n**动手**：把"2026-08-06 14:30:00"用空格分列，拆成日期和时间两列。再把日期列用"-"再分一次。'},
+{title:'查找替换高级用法',body:'Ctrl+H 打开替换窗口。基础用法就不说了，说几个高级的：\n**替换换行符**：查找栏 → 按 **Ctrl+J**（或 Alt+Enter）→ 替换栏输入空格 → 全部替换。把多行挤成一行的脏数据清干净。\n**替换通配符**：查找 `*` → 替换为 `x` → 会把所有内容变成 x。要查找真正的星号，输入 `~*`。\n**替换空格**：查找栏输入一个空格 → 替换栏什么都不填 → 全部替换。除掉数据里的多余空格。\n**注意**：跟去重一样，替换也是不可逆的。先备份。'}
+],
+5:[
+{title:'数据验证',body:'选中一列 → 数据 → **数据验证** → "允许"下拉选条件：\n**整数/小数**：设置最小值和最大值。比如价格列，最小值=13，最大值=180 → 防止有人手误输入 9999。\n**序列**：最实用的。来源框里输入 `竞拍,折扣,打卡,节日`（用英文逗号分隔）→ 单元格出现下拉列表，只能从中选。减少错别字和不统一。\n**日期**：限制只能输入某个日期范围。\n**动手**：在"活动类型"列做下拉列表。以后录入活动数据时不用手动打字，直接下拉选。'},
+{title:'条件格式-基础',body:'开始 → **条件格式** → 突出显示单元格规则：\n- 大于 → 180 → 设置为"浅红填充色深红色文本" → 价格异常高的自动红\n- 小于 → 50 → 设置绿色 → 低价引流款自动标绿\n**多条规则叠加**：同一個區域可以加多条规则。先设 >180 红，再设 <50 绿，中间值不标色。\n**注意优先级**：条件格式→管理规则→可以拖拽调整规则顺序。冲突时上面的规则优先生效。'},
+{title:'条件格式-进阶',body:'条件格式不止"标色"：\n**数据条**：在单元格背景上画长度不等的色条。给靓号价格列加数据条 → 一眼看出价格分布，不需要做图表。\n**色阶**：用颜色深浅表示数值高低。比如绿色(低)→黄色(中)→红色(高)，看价格分布热力图。\n**图标集**：加方向箭头。↑ 涨 ↓ 跌 → 持平。\n**实战**：给靓号定价表——价格列加数据条，位数列加色阶（5位=红/6位=橙/7位=黄/8位=绿）。打开表格一看就知道"红色的号最贵"。'}
+],
+6:[
+{title:'创建第一个透视表',body:'**步骤**：\n1. 选中你的整个数据区域（Ctrl+A 全选）\n2. 插入 → **数据透视表** → 确定\n3. Excel 会新建一个工作表，出现空白透视表 + 右侧的"数据透视表字段"面板\n**你现在看到什么**：\n- 左边：空白透视表区域\n- 右边上方：所有列的字段列表\n- 右边下方：四个区域——**筛选器、列、行、值**\n**先不要拖任何东西**，花 10 秒理解这个布局。这四个区域是透视表的全部逻辑。'},
+{title:'四个区域详解',body:'这四个区域各有分工：\n**行**：把什么字段放在"行标签"——这列的唯一值会变成透视表的每一行。拖"活动类型"到行 → 透视表出现"竞拍、折扣、打卡、节日"四个行。\n**值**：你想**汇总什么数字**。拖"用户ID"到值 → 默认显示"计数"→ 每类活动各有多少人参与。再拖"价格"到值 → 显示"求和"→ 每类活动的总交易额。\n**列**：类似行，但放在列方向。拖"月份"到列 → 行是活动类型，列是月份，中间是交叉数字——一个二维矩阵。\n**筛选器**：全局过滤条件。拖"年份"到筛选器 → 可以只显示某一年。\n**现在动手**：活动类型→行，用户ID→值(计数)，价格→值(求和)。你就得到了"各活动类型的参与人数和总销售额"。'},
+{title:'修改汇总方式',body:'默认情况下，透视表对数字字段用"求和"，对文本字段用"计数"。\n**改成平均值**：值区域 → 点击"价格"字段 → 值字段设置 → 汇总方式选"平均值"。\n**一行代码都不用写**，你就能看到"每个活动类型的人均消费"。\n**试试这些汇总方式**：计数、求和、平均值、最大值、最小值。每个都切一下，感受不同汇总方式带来的信息差异。'}
+],
+7:[
+{title:'日期分组',body:'如果行标签是日期，透视表默认每一天一行——几百行没法看。\n**解决方法**：右键任意日期 → 选择"组合" → 弹出窗口 → 勾选"月"（或"季度""年"）→ 确定。\n现在几百行日期变成了 12 行（1月-12月）。这就是"日期分组"。\n**也可以多选**：同时勾选"月"和"年"→ 每年下面再分月。\n**实战**：用你的活动数据，把日期按月分组，看每个月的活动参与总人数趋势。'},
+{title:'数值分组',body:'跟日期分组同一个逻辑，但用于数字列。\n右键行标签中的价格 → 组合 → 设置"起始于 0，终止于 300，步长 50"→ 价格被分成 0-50、50-100、100-150、150-200、200-250、250-300 六个区间。\n**配合计数**：每个价格区间有多少个靓号 → 这就是你的价格分布。\n**验证黄金销售区间**：看 50-180 这个区间的号占比最高吗？如果最高，说明你的定价策略是数据驱动的，不是拍脑袋的。'},
+{title:'切片器',body:'插入 → **切片器** → 勾选"活动类型"→ 出现一个浮动面板，上面有竞拍/折扣/打卡/节日四个按钮。\n**怎么用**：点"竞拍"→ 透视表立刻只显示竞拍活动的数据。点"折扣"→ 切换到折扣活动。再点一下同一个按钮→取消筛选。\n**比筛选下拉框好在哪**：\n1. 一眼能看出当前筛了什么\n2. 可以同时连多个透视表——点一下切片器，所有透视表和图表一起切换\n3. 给老板展示时，点按钮比翻下拉菜单专业得多'}
+],
+9:[
+{title:'统计函数全家桶',body:'这几个函数是你日常 80% 分析的基础：\n**=SUM(范围)**：求和。=SUM(B2:B100) → B2到B100加总。\n**=AVERAGE(范围)**：平均值。自动忽略空单元格和文本。\n**=COUNT(范围)**：数有几个数字。只统计数据是数字的格子——文本、空值、错误值都不算。\n**=COUNTA(范围)**：数有几个非空单元格。包含文本、数字、日期——只要格子里有东西就算。\n**区别**：COUNT 只数"钱""人数"这种数字列，COUNTA 数"名字""活动类型"这种文本列。用混了计数就对不上。\n**=MAX(范围)/MIN(范围)**：最大值/最小值。找"最贵的号多少钱"或"最少几个人参加"。'},
+{title:'COUNTIF 条件计数',body:'=COUNTIF(范围, 条件)\n计数器加上了条件。**条件怎么写**：\n- 精确匹配：=COUNTIF(A:A,"竞拍") → A列中等于"竞拍"的个数\n- 大于：=COUNTIF(B:B,">100") → B列中大于100的个数\n- 包含：=COUNTIF(A:A,"*888*") → A列中包含"888"的(**号是通配符)\n- 不等于：=COUNTIF(A:A,"<>竞拍") → A列中不是"竞拍"的\n**多条件版**：=COUNTIFS(范围1,条件1, 范围2,条件2, ...) → 所有条件同时满足才计数。\n**实战**：统计"价格>100的5位靓号数量" =COUNTIFS(位数列,5, 价格列,">100")'},
+{title:'SUMIF 条件求和',body:'=SUMIF(条件范围, 条件, 求和范围)\n**跟 COUNTIF 的区别**：COUNTIF 数个数，SUMIF 求和。\n**实战**：=SUMIF(规律列,"*888*", 价格列) → 所有含888的靓号卖了多少钱。\n**多条件版**：=SUMIFS(求和范围, 条件范围1,条件1, 条件范围2,条件2)\n注意 SUMIFS 的第一个参数是求和范围（跟 SUMIF 顺序不同！）。'}
+],
+10:[
+{title:'VLOOKUP 精确匹配',body:'=VLOOKUP(要找谁, 在哪个区域找, 返回第几列, FALSE)\n**举例**：有两个表——用户表(ID/昵称/等级)，参与表(用户ID)——你想把参与表里的用户ID匹配出昵称。\n在参与表的空白列输入：=VLOOKUP(A2, 用户表!A:C, 2, FALSE)\n翻译：在用户表的A到C列里，找等于A2(某个用户ID)的行，找到后返回那行第2列(昵称)。FALSE=必须精确匹配。\n**常见坑**：\n- 查找列必须在第一列（VLOOKUP 只能向右看，不能向左看）\n- 找不到返回 #N/A（检查是不是有空格或格式不一致）\n- 第四参数写 TRUE 会模糊匹配（数据必须升序排列），新手别用'},
+{title:'VLOOKUP 近似匹配',body:'=VLOOKUP(查找值, 区域, 返回列, TRUE)\n**适用场景**：区间匹配。比如你想根据金额匹配折扣档位：\n- 0→无折扣, 50→9折, 100→8折, 180→7折\n- 买了一个 88 元的号 → VLOOKUP 模糊匹配到 50 那一档 → 9折\n**要求**：查找列必须**从小到大排序**，否则结果不可预测。\n模糊匹配的逻辑："找最接近且不超过"——找 88 时，0 不超过、50 不超过、100 超过了 → 停在 50。'},
+{title:'XLOOKUP 简介',body:'=XLOOKUP(找什么, 查找列, 返回列)\n**比 VLOOKUP 好在哪**：\n1. 不用数第几列——直接指定返回哪列，不会因为中间加了一列导致参数错误\n2. 可以向左查——查找列和返回列不用"查找列在左"\n3. 找不到时可以返回自定义文字而不是 #N/A\n**前提**：Excel 2021 或 Microsoft 365 才有。老版本 Excel 没有这个函数。\n如果你们公司用老版本 Excel，先记住有这个函数，以后升级了再用。面试时提一句"我知道 XLOOKUP 比 VLOOKUP 好用"是加分项。'}
+],
+11:[
+{title:'IF 条件判断',body:'=IF(条件, 成立时返回什么, 不成立时返回什么)\n**基础**：=IF(A1>100, "贵", "便宜") → A1>100时显示"贵",否则显示"便宜"\n**嵌套 IF**：=IF(A1>180, "展示款", IF(A1>100, "利润款", IF(A1>50, "主力款", "引流款")))\n**多重条件用 IFS（Excel 2016+）**：=IFS(A1>180,"展示款", A1>100,"利润款", A1>50,"主力款", TRUE,"引流款")。比嵌套 IF 清晰得多。\n**实战**：给靓号定分类——>180=展示款(不主动推), 100-180=利润款(溢价空间大), 50-100=主力款(走量), <50=引流款(吸引点击)。'},
+{title:'LEFT/RIGHT/MID 截取文本',body:'**=LEFT(文本, 几位)**：从左边截取。=LEFT("48360054",4) → "4836"\n**=RIGHT(文本, 几位)**：从右边截取。=RIGHT("48360054",3) → "054"\n**=MID(文本, 从第几位开始, 取几位)**：任意位置。=MID("48360054",3,2) → 从第3位取2位 → "36"\n**实战**：靓号"48360054"，=RIGHT(A1,1) 取最后一位 → 判断尾号是 8 还是 4（决定了"吉祥度"）。=MID(A1,4,3) 从第4位取3位→判断是否含特定组合。'},
+{title:'TEXT 格式化',body:'=TEXT(数值或日期, "格式代码")\n**常用格式代码**：\n- =TEXT(A1, "yyyy年mm月dd日") → 2026年08月06日\n- =TEXT(A1, "aaaa") → 星期四（自动显示中文星期几）\n- =TEXT(B1, "#,##0") → 1,234,567（加千分位分隔符）\n- =TEXT(B1, "0.00") → 1234.00（固定两位小数）\n**TEXT 返回的是文本**，不能参与计算。=TEXT(123,"000")="123"(文本), 不是 123(数字)。'}
+],
+12:[
+{title:'柱状图',body:'**适用场景**：比较不同类别的数值大小。\n**制作**：选中数据 → 插入 → 柱状图 → 选择样式。\n**实战**：选中"活动类型"列和"参与人数"列 → 插入柱状图 → 得到"各类型活动参与人数对比"。\n**美化**：点击图表 → 右上角 + → 勾选"数据标签"(柱子上显示数字)、"轴标题"(标一下 X 轴和 Y 轴)。\n**注意事项**：柱状图必须从 0 开始（Y 轴最小值=0）。如果从中间值开始会放大差异，看起来像是在误导。'},
+{title:'折线图',body:'**适用场景**：展示随时间变化的趋势。\n**制作**：选中日期列+数值列 → 插入 → 折线图。\n**实战**：12 个月的参与人数 → 折线图 → 一眼看出"哪个月活动最火、趋势是涨还是跌"。\n**不要用折线图**：对比分类数据（比如 5 种活动类型对比）——折线图暗示"连续性"，分类数据没有连续性，用柱状图。'}
+],
+19:[
+{title:'什么是数据库和SQL',body:'**数据库** = 一个电子表格文件，但更大、更规范。里面有多张**表**，每张表有**行**和**列**。\n**SQL** = Structured Query Language（结构化查询语言）。就是你用来"跟数据库说话"的语言。你跟数据库说什么，它就返回什么。\n**类比理解**：数据库=图书馆，表=书架，行=一本书，列=书的属性(书名/作者/年份)。SQL=你跟图书管理员说的话："帮我找2020年后出版的所有科幻小说"→ 管理员(SQL引擎)去找→返回结果。\n**不要被"语言"吓到**。SQL 不是编程语言，是**查询语言**。你不需要写循环、不需要写逻辑，只需要描述"我要什么"。跟搜索框输入关键词没有本质区别。'},
+{title:'打开SQLZoo，写出第一句SQL',body:'**现在打开**：https://sqlzoo.net/wiki/SQL_Tutorial\n**做第 0 节**（00 SELECT basics）：\n右边看到例题 → 在输入框写 SQL → 点 Submit → 看结果。\n**第一句 SQL**：`SELECT population FROM world WHERE name = \'Germany\'`\n翻译成人话：从 world 这张表里，找出 name 等于 Germany 那行，返回它的 population。\n**SQL 的结构**：\n- SELECT：你要什么列\n- FROM：从哪张表\n- WHERE：什么条件\n- 分号结尾（SQLZoo 里可省略）\n**现在做**：把第 0 节所有题目做完（大概 5 道题，10 分钟）。做错了没关系，看报错信息——SQL 的报错通常会告诉你哪个位置写错了。'},
+{title:'关键认知：SQL 不区分大小写',body:'SELECT 和 select 是一样的。但行业约定：\n- **关键字大写**：SELECT、FROM、WHERE、AND、OR\n- **表名列名小写**：world、name、population\n这样一眼就能分辨"这是 SQL 命令"还是"这是你的数据"。\n**为什么 SQLZoo 用英文**：SQL 关键字就是英文，数据库里的表名和列名也通常是英文。习惯英文界面是必要的——以后工作中你面对的都是英文表名。'}
+],
+20:[
+{title:'WHERE 的各种条件',body:'WHERE = 筛选。跟 Excel 的"筛选"一样。\n**基础比较**：\n- `=` 等于：WHERE name = \'China\'\n- `>` 大于：WHERE population > 100000000（1亿）\n- `<` 小于：WHERE area < 50000\n- `>=` `<=`：大于等于、小于等于\n- `<>` 或 `!=`：不等于\n**多个条件**：\n- AND：两个条件都要满足。WHERE population > 1e8 AND area > 1e6\n- OR：至少满足一个。WHERE continent = \'Europe\' OR continent = \'Asia\'\n- 混合时加括号：WHERE (a=1 OR b=2) AND c=3\n**IN**：= OR 的简写。WHERE continent IN (\'Europe\',\'Asia\') = WHERE continent=\'Europe\' OR continent=\'Asia\'\n**BETWEEN**：在范围内(含边界)。WHERE population BETWEEN 1e7 AND 1e8 = population>=10000000 AND population<=100000000'},
+{title:'LIKE 模糊匹配',body:'LIKE = 文本模糊查找。配合通配符：\n- `%`：匹配任意多个字符(含 0 个)\n- `_`：匹配恰好一个字符\n**练习**：\n- WHERE name LIKE \'A%\' → 以 A 开头的国家（Albania, Argentina...）\n- WHERE name LIKE \'%stan\' → 以 stan 结尾的国家（Pakistan, Afghanistan...）\n- WHERE name LIKE \'%a%\' → 名字里包含字母 a 的国家\n- WHERE name LIKE \'C___\' → C 开头、恰好 4 个字母（Chad, Cuba...）\n- WHERE name LIKE \'% %\' → 名字里含有空格（United States, New Zealand...）\n**注意**：LIKE 默认不区分大小写（取决于数据库）。模糊匹配比精确匹配慢，数据量大时少用。'}
+],
+21:[
+{title:'ORDER BY 排序',body:'ORDER BY 列名 DESC/ASC\n- ASC = 升序（从小到大/A-Z），默认值可以省略\n- DESC = 降序（从大到小/Z-A）\n**多列排序**：ORDER BY continent ASC, population DESC → 先按大洲字母序排，同大洲内按人口从大到小排。\n**练习**：SELECT name, population FROM world ORDER BY population DESC → 人口最多的国家排第一个（中国或印度）。加 LIMIT 5 → 只看前 5。'},
+{title:'LIMIT 限制行数',body:'LIMIT N = 只看前 N 行。\n**常见用法**：\n- 看数据长什么样：LIMIT 10 → 只取前 10 行，不用拉全表\n- 找最大/最小：ORDER BY population DESC LIMIT 1 → 人口最多的那一个国家\n- 分页：LIMIT 20 OFFSET 40 → 跳过前 40 条，取 20 条（第 3 页，每页 20 条）\n**OFFSET** = 跳过多少行。LIMIT 10 OFFSET 5 = 跳过前 5 行，取 10 行。'},
+{title:'DISTINCT 去重',body:'SELECT DISTINCT 列名 FROM 表名 → 返回去重后的值。\n**练习**：SELECT DISTINCT continent FROM world → 返回 7 个大洲（每个大洲只出现一次）。\n**COUNT + DISTINCT**：SELECT COUNT(DISTINCT continent) FROM world → 7（有多少个不重复的大洲）。\n**注意**：DISTINCT 对后面的所有列生效。SELECT DISTINCT a,b = 两个列的组合去重，不是只对 a 去重。'}
+],
+22:[
+{title:'聚合函数',body:'聚合函数 = 把多行合并成一个数字。\n**COUNT(*)**：数有多少行。SELECT COUNT(*) FROM world → 全世界有多少国家。\n**SUM(列)**：求和。SELECT SUM(population) FROM world → 全世界总人口。\n**AVG(列)**：平均值。SELECT AVG(population) FROM world → 平均每个国家的人口。\n**MAX(列)/MIN(列)**：最大/最小。SELECT MAX(population) FROM world → 人口最多的国家的人口数。\n**关键规则**：聚合函数自动忽略 NULL 值。AVG = SUM / 非空行数，不是 / 总行数。\n**练习**：打开 SQLZoo 第 5 节（05 SUM and COUNT），做里面关于 COUNT 和 SUM 的题目。'},
+{title:'聚合与WHERE的组合',body:'聚合函数可以和 WHERE 一起用。\nSELECT COUNT(*) FROM world WHERE continent = \'Europe\' → 欧洲有多少个国家。\nSELECT SUM(population) FROM world WHERE continent = \'Asia\' → 亚洲总人口。\n**执行顺序**：先 WHERE 筛选 → 再聚合计算。所以 WHERE 里不能用聚合函数（"WHERE COUNT(*)>10"会报错——聚合结果还没算出来）。'}
+],
+23:[
+{title:'GROUP BY 是什么',body:'GROUP BY = 按分类汇总。Excel 透视表的 SQL 版本。\n**举例**：SELECT continent, COUNT(*) FROM world GROUP BY continent\n翻译：按大洲分组 → 每个大洲一行 → 数每个大洲有多少国家。\n**规则**：SELECT 后面，不带聚合函数的列，必须出现在 GROUP BY 后面。\n所以 SELECT name, COUNT(*) FROM world GROUP BY continent 是错误的——name 不属于 continent 分组的一部分。\n**多列分组**：GROUP BY continent, region → 大洲+区域，每个组合一行。'},
+{title:'HAVING 分组后筛选',body:'HAVING = 分组后的 WHERE。\n**区别**：WHERE 筛原始行 → GROUP BY 分组 → HAVING 筛分组结果。\n**举例**：SELECT continent, COUNT(*) FROM world GROUP BY continent HAVING COUNT(*)>10 → 只要国家数超过 10 的大洲。\n**为什么不能写成 WHERE COUNT(*)>10**：因为 COUNT(*) 是分组后才算出来的，WHERE 在分组前执行，那时还没有 COUNT 结果。只能放在 HAVING 里。\n**执行顺序**：FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT\n背下来。面试必考。'}
+],
+26:[
+{title:'JOIN 是什么',body:'JOIN = 把两张表按某个共同字段拼在一起。\n**类比**：你有两张 Excel 表——用户表（ID/昵称）和购买表（用户ID/金额）。你想在购买表里加上"昵称"列。\n手工方法：VLOOKUP。\nSQL 方法：JOIN。\n**INNER JOIN**：SELECT * FROM 用户表 INNER JOIN 购买表 ON 用户表.ID = 购买表.用户ID → 只返回"两表都有的"行。没买过的用户被丢弃，找不到用户的购买记录也被丢弃。\n**LEFT JOIN**：SELECT * FROM 用户表 LEFT JOIN 购买表 ON ... → 保留左表所有行，右表没有匹配的就填 NULL。更常用。"所有用户，买没买过都保留"。'},
+{title:'ON 条件',body:'ON = 告诉数据库"用哪个列来匹配两表"。\nON a.user_id = b.user_id → a 表的 user_id 和 b 表的 user_id 配对。\n**可以多个条件**：ON a.id=b.id AND a.date=b.date\n**ON vs WHERE**：对于 INNER JOIN，ON 和 WHERE 效果一样。对于 LEFT JOIN，ON 在连接时筛选，WHERE 在连接后筛选——结果完全不同。\n**动手**：打开 SQLZoo 第 6 节（06 JOIN），用 game 和 goal 表练习。'},
+{title:'LEFT JOIN 为什么最常用',body:'**场景**：用户表 LEFT JOIN 购买表。\n- 买了东西的用户 → 昵称 + 购买金额\n- 没买过的用户 → 昵称 + NULL\n结果完整保留所有用户。\n如果用的是 INNER JOIN，没买过的用户直接消失了，你就不知道"有多少用户从来不下单"。\n**规则**：主表（你想保留完整的表）放左边，辅助信息表放右边。工作中 90% 用 LEFT JOIN。'}
+],
+27:[
+{title:'多表连接',body:'三张表怎么连？串行 JOIN。\nSELECT * FROM A LEFT JOIN B ON A.id=B.id LEFT JOIN C ON B.id=C.id\n**顺序**：从左到右，每次 JOIN 产生一张临时"宽表"作为下一次 JOIN 的左表。\n**别名简化**：FROM world w JOIN city c ON w.id=c.country_id → w 和 c 是别名，后面全部用缩写，不用写全表名。\n**练习**：用 SQLZoo 的涉及多张表的题目练手。遇到报错先检查：每个 JOIN 都跟了自己的 ON 吗？'},
+{title:'自连接(Self Join)',body:'一张表自己连自己。\n**场景**：员工表里有一个"上级ID"列——上级也是员工，在同一个表里。\nSELECT e.name AS 员工, m.name AS 上级 FROM emp e LEFT JOIN emp m ON e.manager_id = m.id\n**关键**：同一张表用不同别名(e 和 m)，当作两张表来处理。\n**面试经典题**："查出每个员工和他的上级的名字"。答案就是自连接。'}
+],
+29:[
+{title:'子查询是什么',body:'子查询 = 一个查询里面嵌套另一个查询。内层查询的结果给外层查询用。\n**类比**：你先查"中国有多少人口"→ 把这个数字记下来 → 再查"谁比这个数字大"。子查询就是把这两步合成一步。\n**放在 WHERE 中**：SELECT name FROM world WHERE population > (SELECT population FROM world WHERE name=\'Russia\') → 人口超过俄罗斯的国家。\n**放在 FROM 中**：把子查询结果当一张临时表用。SELECT * FROM (SELECT continent, COUNT(*) AS n FROM world GROUP BY continent) AS tmp WHERE n > 10。\n**放在 SELECT 中**：SELECT name, (SELECT AVG(population) FROM world) AS 全球平均 FROM world → 每行旁边附加一个"全球平均人口"列。'},
+{title:'子查询 vs JOIN',body:'很多情况下子查询和 JOIN 能互相替代：\n**用子查询**：逻辑更清晰——"先查俄罗斯人口，再查比它多的"。适合内层只返回一个值或几行的场景。\n**用 JOIN**：性能更好——数据库优化器对 JOIN 的优化更成熟。数据量大时 JOIN 更优。\n**经验**：数据量小(<10万行)、逻辑嵌套浅——用子查询(好读)；数据量大、多层关联——用 JOIN(快)。'}
+],
+30:[
+{title:'窗口函数入门',body:'窗口函数 = 不合并行的条件下，在每行旁边附加一个计算结果。\n**ROW_NUMBER()** = 编号。ROW_NUMBER() OVER (ORDER BY population DESC) → 按人口从大到小编号(1,2,3...)。人口最多的国家编号为 1。\n**加 PARTITION BY** = 分组编号。ROW_NUMBER() OVER (PARTITION BY continent ORDER BY population DESC) → 每个大洲内部各自从 1 开始编号。\n**结果**：亚洲人口第一=1，欧洲人口第一=1，非洲人口第一=1... 每组独立编号。\n**动手**：在 SQLZoo 或牛客网找窗口函数题目。一开始只练 ROW_NUMBER + PARTITION BY。这两样学会了，其他的窗口函数都是同一个模式的变体。'},
+{title:'窗口函数 vs GROUP BY',body:'**GROUP BY**：分组后合并行，每组只剩一行。原始明细丢失。\n**窗口函数**：分组但**保留原始行**，在每行右边附加一列计算结果。\n**场景**：\n- GROUP BY：做汇总报告（"各大洲各有几个国家"）\n- 窗口函数：做明细分析（"每个国家在本大洲排第几"）\n**SELECT continent, name, ROW_NUMBER() OVER (PARTITION BY continent ORDER BY population DESC) AS rank FROM world** → 每行多了个"在大洲内的排名"。行数不变，多一列信息。'}
+],
+31:[
+{title:'LAG/LEAD',body:'LAG = 往上一行看，LEAD = 往下一行看。\n**LAG(sales, 1) OVER (ORDER BY date)** → 每条记录上一行(前一天)的 sales 值。\n**实战**：每天销售额、前一天销售额、差值(今天-昨天) → 放在一行里。传统方法需要 JOIN 自己，非常繁琐。用 LAG 一行搞定。\n**LAG(列, 偏移量, 默认值)** → 第 3 个参数：第一行没有上一行怎么办？填 0 或 NULL。\n**LEAD**：反过来，取下一行。常用于"看这个国家的人口比下一个国家多多少"。\n**注意**：LAG/LEAD 必须在 OVER 里 ORDER BY——你不定义排序，哪来的"上一行"和"下一行"？'}
+]
+};
+
 // ==================== 状态管理 ====================
 const STORAGE_KEY = 'data_learning_tracker_state';
 
@@ -628,11 +752,23 @@ function getCompletedDaysInPhase(phase, completedDays){
 
 // ==================== 渲染 ====================
 let state = loadState();
+let reviewMode = null; // null=正常模式, number=正在复习第X天
 
 function renderAll(){
+  if(reviewMode!==null) return; // 复习模式下不刷新
   checkNewDay();
   renderDashboard();
+  renderReviewEntry();
+  renderReviewBanner();
   renderDailyContent();
+  renderPhaseNav();
+}
+
+function renderAllReview(){
+  renderDashboard();
+  renderReviewEntry();
+  renderReviewBanner();
+  renderDailyContentReview();
   renderPhaseNav();
 }
 
@@ -726,6 +862,22 @@ function renderDailyContent(){
     html += `<div class="day-goal">🎯 ${d.goal}</div>`;
   }
 
+  // 保姆级教程(可折叠)
+  const tuts = TUTORIALS[state.currentDay];
+  if(tuts && tuts.length>0){
+    html += `<button class="tutorial-toggle" onclick="toggleTutorial(this)" id="tutorialToggle">
+      <span class="arrow">▶</span> 📖 保姆级教程（${tuts.length}个小节，点击展开）
+    </button>`;
+    html += `<div class="tutorial-body" id="tutorialBody" style="display:none">`;
+    tuts.forEach(sec=>{
+      html += `<div class="tutorial-section">
+        <h4>${sec.title}</h4>
+        <p>${sec.body.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`(.+?)`/g,'<code>$1</code>')}</p>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
   // Rollover任务
   if(state.rolloverTasks.length>0){
     html += `<div class="section-label">📌 昨天未完成的任务</div><ul class="task-list">`;
@@ -811,6 +963,143 @@ function renderPhaseNav(){
     </div>`;
   }
   container.innerHTML = html;
+}
+
+// ==================== 复习模式 ====================
+function renderReviewBanner(){
+  const el = document.getElementById('reviewBanner');
+  if(reviewMode===null){el.innerHTML='';return;}
+  el.innerHTML = `<div class="review-banner">
+    <span class="label">📖 你正在复习 Day ${reviewMode}：${(getDayData(reviewMode)||{}).title||''}</span>
+    <button class="btn btn-outline btn-sm" onclick="exitReviewMode()">← 返回今天（Day ${state.currentDay}）</button>
+  </div>`;
+}
+
+function renderReviewEntry(){
+  const el = document.getElementById('reviewEntry');
+  const done = Object.keys(state.completedDays).map(Number).sort((a,b)=>a-b);
+  if(done.length===0){el.innerHTML='';return;}
+  let html = `<button class="review-entry-btn" onclick="toggleReviewList()" id="reviewEntryBtn">
+    📅 回顾已完成的课程（${done.length}天）<span style="font-size:.7rem">▼</span>
+  </button>`;
+  html += `<div id="reviewList" class="review-list" style="display:none">`;
+  done.forEach(dn=>{
+    html += `<div class="review-list-item" onclick="enterReviewMode(${dn})">Day ${dn} ✅ ${(getDayData(dn)||{}).title||''}</div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function toggleReviewList(){
+  const list = document.getElementById('reviewList');
+  const btn = document.getElementById('reviewEntryBtn');
+  if(list.style.display==='none'){
+    list.style.display='block';
+    btn.querySelector('span').textContent='▲';
+  }else{
+    list.style.display='none';
+    btn.querySelector('span').textContent='▼';
+  }
+}
+
+function enterReviewMode(dayNum){
+  reviewMode = dayNum;
+  // 重置签到状态以防干扰
+  state.todayCheckedIn = false;
+  state.todayTaskStatus = {};
+  renderAllReview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function exitReviewMode(){
+  reviewMode = null;
+  renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderDailyContentReview(){
+  const container = document.getElementById('dailyContent');
+  const d = getDayData(reviewMode);
+  if(!d){container.innerHTML='';return;}
+  const phase = d.phase;
+  let html = '';
+
+  html += `<div class="card">
+    <div class="card-header">
+      <div class="day-title-row">
+        <span class="badge badge-phase${phase}">${getPhaseName(phase)}</span>
+        <span class="card-title">Day ${reviewMode}: ${d.title}</span>
+      </div>
+      <span class="badge badge-done">已完成</span>
+    </div>`;
+
+  if(d.goal){
+    html += `<div class="day-goal">🎯 ${d.goal}</div>`;
+  }
+
+  // 教程（默认展开）
+  const tuts = TUTORIALS[reviewMode];
+  if(tuts && tuts.length>0){
+    html += `<button class="tutorial-toggle open" onclick="toggleTutorial(this)" id="tutorialToggle">
+      <span class="arrow">▼</span> 📖 保姆级教程（${tuts.length}个小节）
+    </button>`;
+    html += `<div class="tutorial-body" id="tutorialBody" style="display:block">`;
+    tuts.forEach(sec=>{
+      html += `<div class="tutorial-section">
+        <h4>${sec.title}</h4>
+        <p>${sec.body.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`(.+?)`/g,'<code>$1</code>')}</p>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // 任务（只读）
+  html += `<div class="section-label">📋 当日任务</div><ul class="task-list">`;
+  d.tasks.forEach((t,i)=>{
+    html += `<li class="task-item" style="cursor:default;opacity:0.8">
+      <div class="task-checkbox" style="background:var(--done);border-color:var(--done)">✓</div>
+      <div class="task-body">
+        <div class="task-text">${t.text}</div>
+        ${t.res ? `<div class="task-resource">${t.resUrl ? `<a href="${t.resUrl}" target="_blank">${t.res}</a>` : t.res}</div>` : ''}
+      </div>
+    </li>`;
+  });
+  html += `</ul>`;
+
+  // 测验回顾
+  const qz = QUIZZES[reviewMode];
+  if(qz){
+    html += `<div class="section-label" style="margin-top:12px">📝 当日测验（${qz.questions.length}题）</div>`;
+    qz.questions.forEach((q,qi)=>{
+      html += `<div class="quiz-question" style="margin-bottom:12px">
+        <div class="quiz-q-text" style="font-size:.85rem">${qi+1}. ${q.q}</div>`;
+      q.opts.forEach((opt,oi)=>{
+        const cls = oi===q.ans?'quiz-option correct':'quiz-option';
+        html += `<div class="${cls}" style="pointer-events:none;font-size:.82rem">${String.fromCharCode(65+oi)}. ${opt} ${oi===q.ans?'✅':''}</div>`;
+      });
+      html += `<div class="quiz-explain">${q.why}</div></div>`;
+    });
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// ==================== 教程折叠 ====================
+function toggleTutorial(btn){
+  const body = document.getElementById('tutorialBody');
+  if(!body) return;
+  const isOpen = body.style.display !== 'none';
+  if(isOpen){
+    body.style.display = 'none';
+    btn.classList.remove('open');
+    btn.querySelector('.arrow').textContent = '▶';
+    btn.innerHTML = btn.innerHTML.replace('▼','▶');
+  }else{
+    body.style.display = 'block';
+    btn.classList.add('open');
+    btn.querySelector('.arrow').textContent = '▼';
+  }
 }
 
 // ==================== 交互 ====================
