@@ -1467,11 +1467,29 @@ function completeDay(){
   state.todayCheckedIn = false;
   state.todayTaskStatus = {};
   state.rolloverTasks = [];
-  if(state.currentDay < 60){
-    state.currentDay++;
-  }
+  // 统计今日完成天数
+  const now = todayStr();
+  if(state._completionsDate !== now){state._completionsDate=now;state._completionsToday=0;}
+  state._completionsToday++;
+  if(state.currentDay < 60) state.currentDay++;
   saveState(state);
-  renderAll();
+  if(state._completionsToday >= 2){
+    showPaceReminder();
+  }else{
+    renderAll();
+  }
+}
+
+function showPaceReminder(){
+  const toast = document.createElement('div');
+  toast.id = 'paceToast';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:18px 24px;z-index:300;text-align:center;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fadeInUp .4s ease';
+  toast.innerHTML = `<div style="font-size:.9rem;margin-bottom:6px">⚡ 今天已完成 <strong>${state._completionsToday}</strong> 天内容，进入 Day ${state.currentDay}</div><div style="font-size:.8rem;color:var(--sub);margin-bottom:12px">学习需要消化，建议每天不超过 2 天新内容。<br>状态正好的话就继续冲。</div><button class="btn btn-primary btn-sm" id="btnPaceOK">继续学习</button>`;
+  document.body.appendChild(toast);
+  document.getElementById('btnPaceOK').onclick = ()=>{
+    toast.remove();
+    renderAll();
+  };
 }
 
 function rolloverUndone(d){
