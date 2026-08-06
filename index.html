@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据分析自学打卡 · 60天计划</title>
+<style>
+:root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d38;--text:#e1e4eb;--sub:#8b8fa3;--accent:#4f8ff7;--done:#2ecc71;--warn:#f39c12;--danger:#e74c3c;--phase1:#4f8ff7;--phase2:#2ecc71;--phase3:#f39c12;--phase4:#e74c3c;--radius:10px;--shadow:0 2px 8px rgba(0,0,0,.3)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.container{max-width:720px;margin:0 auto;padding:16px}
+header{text-align:center;padding:24px 0 16px}
+header h1{font-size:1.5rem;font-weight:700;margin-bottom:4px}
+header .subtitle{color:var(--sub);font-size:.85rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:1.05rem;font-weight:700}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
+.badge-phase1{background:rgba(79,143,247,.15);color:var(--phase1)}
+.badge-phase2{background:rgba(46,204,113,.15);color:var(--phase2)}
+.badge-phase3{background:rgba(243,156,18,.15);color:var(--phase3)}
+.badge-phase4{background:rgba(231,76,60,.15);color:var(--phase4)}
+.badge-done{background:rgba(46,204,113,.15);color:var(--done)}
+.badge-roll{background:rgba(243,156,18,.15);color:var(--warn)}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat-item{background:var(--bg);border-radius:var(--radius);padding:14px;text-align:center}
+.stat-value{font-size:1.5rem;font-weight:700}
+.stat-label{font-size:.75rem;color:var(--sub);margin-top:2px}
+.phase-bar{display:flex;gap:6px;margin-bottom:14px}
+.phase-seg{height:6px;border-radius:3px;flex:1;background:var(--border);transition:background .3s}
+.phase-seg.done{background:var(--done)}
+.phase-seg.current{background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.task-list{list-style:none}
+.task-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:8px;margin-bottom:6px;background:var(--bg);border:1px solid transparent;transition:all .2s;cursor:pointer}
+.task-item:hover{border-color:var(--border)}
+.task-item.checked{opacity:.55}
+.task-item.checked .task-text{text-decoration:line-through}
+.task-item.rollover{border-left:3px solid var(--warn)}
+.task-checkbox{flex-shrink:0;width:22px;height:22px;border:2px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px}
+.task-checkbox.done{background:var(--done);border-color:var(--done)}
+.task-checkbox.done::after{content:'✓';color:#fff;font-size:13px;font-weight:700}
+.task-body{flex:1;min-width:0}
+.task-text{font-size:.92rem;margin-bottom:4px}
+.task-resource{font-size:.78rem;color:var(--accent)}
+.task-resource a{color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--accent)}
+.task-resource a:hover{border-bottom-style:solid}
+.task-time{font-size:.72rem;color:var(--sub)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:8px;font-size:.9rem;font-weight:600;border:none;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+.btn-block{width:100%;justify-content:center;margin-top:8px}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.weekend-banner{background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.2);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:14px}
+.weekend-banner .icon{font-size:2rem;margin-bottom:6px}
+.day-title-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.day-goal{font-size:.85rem;color:var(--sub);margin-bottom:12px;padding:8px 12px;background:rgba(79,143,247,.06);border-radius:6px;border-left:3px solid var(--accent)}
+.section-label{font-size:.75rem;text-transform:uppercase;color:var(--sub);letter-spacing:.05em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:380px;width:90%;text-align:center}
+.modal h3{margin-bottom:12px}
+.modal p{color:var(--sub);margin-bottom:20px;font-size:.9rem}
+.modal-btns{display:flex;gap:10px;justify-content:center}
+.empty-state{text-align:center;padding:40px 20px;color:var(--sub)}
+.empty-state .icon{font-size:3rem;margin-bottom:12px}
+.timer-display{font-size:.85rem;color:var(--sub);text-align:center;margin:8px 0;font-variant-numeric:tabular-nums}
+@media(max-width:480px){
+  .container{padding:10px}
+  .card{padding:14px}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  header h1{font-size:1.25rem}
+}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <header>
+    <h1>📊 数据分析自学打卡</h1>
+    <div class="subtitle">60天 · 4个阶段 · Excel → SQL → AI → 实战</div>
+  </header>
+
+  <!-- 仪表盘 -->
+  <div class="card" id="dashboard">
+    <div class="stats-row">
+      <div class="stat-item"><div class="stat-value" id="stat-day">1</div><div class="stat-label">当前第X天</div></div>
+      <div class="stat-item"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">连续打卡</div></div>
+      <div class="stat-item"><div class="stat-value" id="stat-done">0</div><div class="stat-label">已完成天数</div></div>
+      <div class="stat-item"><div class="stat-value" id="stat-rate">0%</div><div class="stat-label">完成率</div></div>
+    </div>
+    <div class="phase-bar" id="phaseBar"></div>
+  </div>
+
+  <!-- 当日课程 -->
+  <div id="dailyContent"></div>
+
+  <!-- 阶段导航 -->
+  <div class="card" id="phaseNav">
+    <div class="card-header"><span class="card-title">🗺️ 阶段导航</span></div>
+    <div id="phaseList"></div>
+  </div>
+</div>
+
+<!-- 签到弹窗 -->
+<div class="modal-overlay" id="checkoutModal" style="display:none">
+  <div class="modal">
+    <h3>📝 今天学完了吗？</h3>
+    <p id="modalMsg">你完成了 3/4 个任务。</p>
+    <div class="modal-btns">
+      <button class="btn btn-outline" id="btnNotDone">没学完</button>
+      <button class="btn btn-primary" id="btnDone">学完了！</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 课程数据 ====================
+const CURRICULUM = [
+  // ===== 阶段一: Excel进阶 (Day 1-15) =====
+  {day:1,phase:1,title:'重新认识Excel',goal:'熟悉功能区布局,不再"找不到功能在哪"',tasks:[
+    {text:'熟悉功能区布局：开始/插入/页面布局/公式/数据/审阅/视图，每个选项卡点开看一下里面有什么','res':'B站搜"Excel零基础入门"找播放量最高的视频','resUrl':'https://search.bilibili.com/all?keyword=Excel%E9%9B%B6%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8','time':'20分钟'},
+    {text:'自定义快速访问工具栏：把你常用的3个功能（保存/撤销/筛选）加到左上角快速栏','res':'右键点击功能区→自定义快速访问工具栏','time':'10分钟'},
+    {text:'练习工作簿/工作表操作：新建3个工作表，分别命名为"数据源""分析结果""图表"，学会移动和复制工作表','time':'20分钟'}
+  ]},
+  {day:2,phase:1,title:'数据输入与格式',goal:'能区分数据类型,会用Ctrl+E自动填充',tasks:[
+    {text:'理解三种数据类型：文本(左对齐)、数字(右对齐)、日期。在单元格里分别输入"123"、123、2026-08-06，观察对齐方式的区别','time':'15分钟'},
+    {text:'掌握单元格格式设置：选中单元格→右键→设置单元格格式→分别切换到数值/货币/日期/百分比，看预览效果','res':'B站搜"Excel单元格格式"','resUrl':'https://search.bilibili.com/all?keyword=Excel%E5%8D%95%E5%85%83%E6%A0%BC%E6%A0%BC%E5%BC%8F','time':'20分钟'},
+    {text:'学会Ctrl+E快速填充：在一列旁边手打两行你想要的结果→选中→Ctrl+E→Excel自动补全剩下的。用这个功能把"张三13800138000"拆成"张三"和"13800138000"两列','res':'B站搜"Excel Ctrl+E 快速填充"','resUrl':'https://search.bilibili.com/all?keyword=Excel+Ctrl%2BE+%E5%BF%AB%E9%80%9F%E5%A1%AB%E5%85%85','time':'15分钟'}
+  ]},
+  {day:3,phase:1,title:'筛选与排序',goal:'能快速从一堆数据里筛出你想要的行',tasks:[
+    {text:'学会自动筛选：选中数据区域→数据→筛选→点列头的下拉箭头,分别练习文本筛选(等于/包含/开头是)和数字筛选(大于/小于/介于)','time':'20分钟'},
+    {text:'按颜色筛选：给一些单元格填色→筛选→按颜色筛选。这对审核内容的场景很有用','time':'10分钟'},
+    {text:'自定义排序：数据→排序→添加多个条件。练习:先按"位数"排序,再按"价格"从大到小排','time':'15分钟'},
+    {text:'用你的靓号数据练习：筛出含888的号、价格>100的号、5位且价格<200的号','time':'15分钟'}
+  ]},
+  {day:4,phase:1,title:'数据清洗-去重与分列',goal:'能把一团乱的表格整理成可分析的状态',tasks:[
+    {text:'删除重复值：选中列→数据→删除重复项。试试单条件去重(只按ID去重)和多条件去重(按ID+日期同时相同才去重)','time':'15分钟'},
+    {text:'文本分列：数据→分列→按分隔符(比如用逗号/空格/顿号分)或按固定宽度。把"2026-08-06 14:30"拆成日期和时间两列','time':'20分钟'},
+    {text:'查找替换高级用法：Ctrl+H→替换空格/换行符(查找栏输入Alt+Enter)/特殊字符。把一段乱七八糟粘贴过来的文本整理干净','res':'B站搜"Excel查找替换技巧"','resUrl':'https://search.bilibili.com/all?keyword=Excel%E6%9F%A5%E6%89%BE%E6%9B%BF%E6%8D%A2%E6%8A%80%E5%B7%A7','time':'15分钟'},
+    {text:'实战:拿你活动数据里回复用户的列表,找出重复用户,整理成干净的名单','time':'15分钟'}
+  ]},
+  {day:5,phase:1,title:'数据验证与条件格式',goal:'能设置输入限制,能用颜色一眼看出异常值',tasks:[
+    {text:'数据验证：选中列→数据→数据验证→设置允许的条件(整数范围/下拉列表/日期限制)。做一个"活动类型"下拉列表:竞拍/折扣/打卡/节日','time':'15分钟'},
+    {text:'条件格式-基础：开始→条件格式→突出显示单元格规则。把价格>180的标红,价格<50的标绿','time':'15分钟'},
+    {text:'条件格式-进阶：数据条(看大小对比)、色阶(看分布)、图标集(加箭头)。给靓号价格列加上数据条,一眼看出价格梯度','res':'B站搜"Excel条件格式"','resUrl':'https://search.bilibili.com/all?keyword=Excel%E6%9D%A1%E4%BB%B6%E6%A0%BC%E5%BC%8F','time':'20分钟'},
+    {text:'实战:给你的靓号定价表设条件格式——高价红/低价绿/含888的黄色高亮','time':'15分钟'}
+  ]},
+  {day:6,phase:1,title:'数据透视表-基础',goal:'今天学完,你能在1分钟内从原始数据里汇总出任何统计数字',tasks:[
+    {text:'创建第一个透视表：选中数据→插入→数据透视表→确定。感受一下空白透视表的样子','time':'10分钟'},
+    {text:'理解四个区域：把"活动日期"拖到行、把"用户ID"拖到值(选计数)、把"活动类型"拖到筛选器、把"价格"拖到值(选求和)。观察每个区域的效果','time':'25分钟'},
+    {text:'切换汇总方式：值字段设置→分别试计数/求和/平均值/最大值/最小值','time':'15分钟'},
+    {text:'练习:用你的活动数据透视出"每天参与人数"和"每天平均购买金额"','time':'20分钟'}
+  ]},
+  {day:7,phase:1,title:'数据透视表-进阶',goal:'掌握分组和切片器,能从不同维度切数据',tasks:[
+    {text:'日期分组：把日期拖到行→右键→组合→按月/按季度分组。看活动参与人数的月度趋势','time':'20分钟'},
+    {text:'数值分组：把价格拖到行→右键→组合→按区间(比如0-50/50-100/100-180/180+)分组。看各区间销量占比','time':'15分钟'},
+    {text:'切片器：插入→切片器→选"活动类型"→点不同的活动类型,透视表自动切换。这是交互式分析的基础','res':'B站搜"Excel切片器"','resUrl':'https://search.bilibili.com/all?keyword=Excel%E5%88%87%E7%89%87%E5%99%A8','time':'15分钟'},
+    {text:'练习:做一个带切片器的透视表,能一键切换看不同活动类型的参与人数对比','time':'20分钟'}
+  ]},
+  {day:8,phase:1,title:'数据透视表-实战',goal:'用透视表回答真实的业务问题',tasks:[
+    {text:'学会计算字段：数据透视表分析→字段/项目/集→计算字段。创建一个"转化率"字段 = 购买人数/参与人数','res':'B站搜"数据透视表计算字段"','resUrl':'https://search.bilibili.com/all?keyword=%E6%95%B0%E6%8D%AE%E9%80%8F%E8%A7%86%E8%A1%A8%E8%AE%A1%E7%AE%97%E5%AD%97%E6%AE%B5','time':'20分钟'},
+    {text:'用透视表回答3个问题:(1)哪类活动参与率最高?(2)哪个价位的靓号销量最好?(3)周末和平时参与率有差异吗?','time':'30分钟'},
+    {text:'把你刚才分析的结果复制到一张新工作表,标注结论。这是你第一个"分析报告"的雏形','time':'20分钟'}
+  ]},
+  {day:9,phase:1,title:'常用函数-统计类',goal:'掌握5个核心统计函数',tasks:[
+    {text:'SUM/AVERAGE/COUNT/COUNTA：在练习表里算总和/平均值/有数据的单元格数/非空单元格数。理解COUNT(只数数字)和COUNTA(数所有非空)的区别','time':'20分钟'},
+    {text:'COUNTIF：条件计数。练习:"含888的靓号有多少个?""价格>100的有多少个?""5位的有多少个?"','time':'20分钟'},
+    {text:'SUMIF：条件求和。练习:"含888靓号的总销售额?""某活动的总参与人数?"','time':'20分钟'},
+    {text:'实战:用COUNTIF统计你靓号库里各种规律类型的数量(含888/顺子/豹子/AABB/普通)','time':'20分钟'}
+  ]},
+  {day:10,phase:1,title:'常用函数-查找类',goal:'学会VLOOKUP,能在两张表之间按ID匹配信息',tasks:[
+    {text:'VLOOKUP精确匹配：=VLOOKUP(查找值,查找区域,返回第几列,FALSE)。练习:根据用户ID,从用户表里匹配出他的昵称和等级','res':'B站搜"VLOOKUP函数详解"','resUrl':'https://search.bilibili.com/all?keyword=VLOOKUP%E5%87%BD%E6%95%B0%E8%AF%A6%E8%A7%A3','time':'25分钟'},
+    {text:'VLOOKUP近似匹配：=VLOOKUP(查找值,查找区域,返回列,TRUE)。练习:根据价格匹配折扣区间(0-50→无折扣,50-100→9折...)','time':'20分钟'},
+    {text:'了解XLOOKUP：=XLOOKUP(查找值,查找列,返回列)。理解它比VLOOKUP好在哪(不用数第几列/可以向左查/找不到自动返回默认值)','time':'15分钟'},
+    {text:'实战:用VLOOKUP把你活动参与名单里的用户ID匹配出他们的VIP等级','time':'20分钟'}
+  ]},
+  {day:11,phase:1,title:'常用函数-逻辑与文本',goal:'能写条件判断,能从文本里提取信息',tasks:[
+    {text:'IF和IFS：=IF(条件,成立时的值,不成立时的值)。=IFS(条件1,值1,条件2,值2,条件3,值3)。练习:根据价格自动标注"引流款""主力款""利润款"','time':'20分钟'},
+    {text:'LEFT/RIGHT/MID：从文本里截取。练习:从靓号里提取第3-5位、从日期文本"20260806"里提取月份','time':'15分钟'},
+    {text:'TEXT：格式转换。练习:=TEXT(A1,"yyyy年mm月dd日")、=TEXT(B1,"#,##0")加千分位','time':'15分钟'},
+    {text:'综合练习:用函数自动判断一个靓号属于哪种规律类型(提示:用MID提取数字→用IF判断是否是888/顺子/豹子)','time':'25分钟'}
+  ]},
+  {day:12,phase:1,title:'图表-基础',goal:'能做柱状图和折线图,把数据变成能看的图',tasks:[
+    {text:'柱状图：选中数据→插入→柱状图。做一张"各活动类型参与人数对比"的柱状图。学会修改颜色/添加数据标签/调整间距','res':'B站搜"Excel图表制作基础"','resUrl':'https://search.bilibili.com/all?keyword=Excel%E5%9B%BE%E8%A1%A8%E5%88%B6%E4%BD%9C%E5%9F%BA%E7%A1%80','time':'25分钟'},
+    {text:'折线图：做一张"月度销量趋势"的折线图。理解折线图适用于展示变化趋势,不适用于分类对比','time':'20分钟'},
+    {text:'图表元素：给图表加标题/轴标签/数据标签/图例。理解每个元素的作用和使用场景','time':'15分钟'}
+  ]},
+  {day:13,phase:1,title:'图表-进阶',goal:'能做组合图和饼图,图表表达能力上一个台阶',tasks:[
+    {text:'饼图：做一张"各规律类型占比"的饼图。注意:分类超过5个不要用饼图,改用柱状图','time':'15分钟'},
+    {text:'组合图：柱状图+折线图放在一起。做一张图:柱子=每月销量,折线=每月均价。需要右键→更改图表类型→选择"组合"','res':'B站搜"Excel组合图"','resUrl':'https://search.bilibili.com/all?keyword=Excel%E7%BB%84%E5%90%88%E5%9B%BE','time':'25分钟'},
+    {text:'迷你图：在一个单元格里插入微型图表(插入→迷你图)。在数据表旁边加上迷你趋势线,一眼看出每行数据的趋势','time':'15分钟'}
+  ]},
+  {day:14,phase:1,title:'Excel综合实战(一)',goal:'全流程:拿到脏数据→清洗→透视→函数→图表→结论,30分钟内完成',tasks:[
+    {text:'找练习数据:从网上下载一份公开数据(搜"Excel练习题数据"或"Kaggle小数据集"),或者用你自己的靓号/活动数据','time':'5分钟'},
+    {text:'清洗数据:去重→分列→检查空值和异常值→统一格式','time':'10分钟'},
+    {text:'分析数据:用透视表做汇总→用函数算关键指标→把结论写成3-5个要点','time':'10分钟'},
+    {text:'可视化:至少用2种图表展示你的分析结论','time':'5分钟'}
+  ]},
+  {day:15,phase:1,title:'Excel综合实战(二) + 阶段总结',goal:'再跑一遍全流程,找到自己的薄弱环节',tasks:[
+    {text:'换一份新数据,独立完成全流程。计时,看哪个环节最慢','time':'20分钟'},
+    {text:'专项强化最慢的环节(透视表慢就加练透视表,函数慢就加练函数)','time':'15分钟'},
+    {text:'整理阶段学习笔记:写一个清单"我现在能用Excel做什么",列至少8件事','time':'15分钟'},
+    {text:'回顾:Day 1-14所有任务是不是都完成了?有遗漏的今天补上','time':'10分钟'}
+  ]},
+  // ===== 阶段一结束 =====
+  {day:16,phase:1,title:'Excel自由练习日',goal:'弹性日,查漏补缺',tasks:[
+    {text:'弹性日:回顾Day 1-15,补上未完成的任务,或练习你觉得还不够熟练的环节','time':'60分钟'}
+  ]},
+  {day:17,phase:1,title:'Excel自由练习日',goal:'弹性日,查漏补缺',tasks:[
+    {text:'弹性日:回顾Day 1-15,补上未完成的任务,或练习你觉得还不够熟练的环节','time':'60分钟'}
+  ]},
+  {day:18,phase:1,title:'Excel自由练习日',goal:'弹性日,查漏补缺',tasks:[
+    {text:'弹性日:回顾Day 1-15,补上未完成的任务,或练习你觉得还不够熟练的环节','time':'60分钟'}
+  ]},
+
+  // ===== 阶段二: SQL基础 (Day 19-36) =====
+  {day:19,phase:2,title:'SQL是什么 & 第一个查询',goal:'理解数据库和SQL的基本概念,写出第一句SELECT',tasks:[
+    {text:'理解概念:什么是数据库?什么是表?什么是行和列?SQL是"告诉数据库你要什么"的语言——跟你用搜索框输入关键词没有本质区别','res':'B站搜"SQL是什么 入门"','resUrl':'https://search.bilibili.com/all?keyword=SQL%E6%98%AF%E4%BB%80%E4%B9%88%E5%85%A5%E9%97%A8','time':'20分钟'},
+    {text:'打开SQLZoo.net→Tutorial→第0节(00 SELECT basics)。读英文题目→在右边输入框写SQL→点Submit看结果。做完第0节全部题目','res':'SQLZoo: https://sqlzoo.net/wiki/SQL_Tutorial','resUrl':'https://sqlzoo.net/wiki/SQL_Tutorial','time':'30分钟'},
+    {text:'理解SELECT/FROM:SELECT后面写你要的列名,FROM后面写表名。=SELECT population FROM world WHERE name="China"→查出中国的人口','time':'20分钟'}
+  ]},
+  {day:20,phase:2,title:'WHERE条件过滤',goal:'能加条件筛选数据',tasks:[
+    {text:'做SQLZoo第1节(01 SELECT name),练习WHERE的各种条件:大于/小于/等于/不等于/IN/BETWEEN','time':'25分钟'},
+    {text:'AND/OR:多个条件怎么组合。AND=两个条件同时满足,OR=满足任意一个就行','time':'15分钟'},
+    {text:'LIKE模糊匹配:%，匹配任意字符。练习:找出所有以"A"开头的国家、包含"stan"的国家','time':'15分钟'},
+    {text:'实战练习:在SQLZoo里自己造查询——"找出人口>1亿且面积>100万平方公里的国家"','time':'15分钟'}
+  ]},
+  {day:21,phase:2,title:'ORDER BY排序 & LIMIT限制',goal:'能排序,能只看前N条',tasks:[
+    {text:'ORDER BY:升序ASC(默认)/降序DESC。练习:按人口从大到小排、按名字字母顺序排','time':'15分钟'},
+    {text:'LIMIT:只看前N条。练习:人口最多的前10个国家','time':'10分钟'},
+    {text:'DISTINCT去重:查不重复的值。练习:有哪些不同的大洲(continent)?','time':'15分钟'},
+    {text:'做SQLZoo第2节(02 SELECT from World),巩固WHERE+ORDER BY+计算列','time':'30分钟'}
+  ]},
+  {day:22,phase:2,title:'聚合函数',goal:'学会COUNT/SUM/AVG/MAX/MIN,能算总数/总和/平均/最大/最小',tasks:[
+    {text:'COUNT:数有多少行。练习:世界表里有多少个国家?欧洲有多少个国家?','time':'15分钟'},
+    {text:'SUM/AVG:求和/求平均。练习:全世界总人口?平均面积?','time':'15分钟'},
+    {text:'MAX/MIN:最大值/最小值。练习:人口最多的国家人口数?面积最小的国家面积?','time':'10分钟'},
+    {text:'做SQLZoo第5节(05 SUM and COUNT),练习所有聚合函数','time':'30分钟'}
+  ]},
+  {day:23,phase:2,title:'GROUP BY分组',goal:'这是SQL最核心的能力:按分类汇总',tasks:[
+    {text:'理解GROUP BY:SELECT continent, COUNT(*) FROM world GROUP BY continent→每个大洲分别有多少国家','time':'20分钟'},
+    {text:'多字段分组:SELECT continent, region, COUNT(*) FROM world GROUP BY continent, region→每个大洲下的每个区域分别计','time':'15分钟'},
+    {text:'HAVING:分组后筛选(WHERE是分组前筛,HAVING是分组后筛)。练习:找出国家数>10的大洲','time':'15分钟'},
+    {text:'做SQLZoo第5节(05 SUM and COUNT),特别是带HAVING的题目','time':'25分钟'}
+  ]},
+  {day:24,phase:2,title:'GROUP BY实战',goal:'大量练习分组汇总,这是面试高频考点',tasks:[
+    {text:'在牛客网找到SQL入门题库,筛选"GROUP BY"相关题目,做10道','res':'牛客网SQL: https://www.nowcoder.com/exam/oj?tab=SQL%E7%AF%87','resUrl':'https://www.nowcoder.com/exam/oj?tab=SQL%E7%AF%87','time':'35分钟'},
+    {text:'复盘:把做错的题重新做一遍,理解为什么错','time':'20分钟'},
+    {text:'总结笔记:GROUP BY的3个关键规则写下来(1.SELECT中不在聚合函数里的列必须出现在GROUP BY中 2.WHERE在GROUP BY前,HAVING在后 3.执行顺序)','time':'15分钟'}
+  ]},
+  {day:25,phase:2,title:'自由练习 & 复习',goal:'巩固本周所学',tasks:[
+    {text:'回顾Day 19-24的内容,确认每个概念都理解了','time':'30分钟'},
+    {text:'在牛客网重做之前做错的题','time':'30分钟'}
+  ]},
+  {day:26,phase:2,title:'JOIN-连接两张表',goal:'能把两张表按共同字段拼在一起,这是工作中80%的场景',tasks:[
+    {text:'理解INNER JOIN:SELECT * FROM tableA INNER JOIN tableB ON tableA.id = tableB.id→只要两张表都匹配得上的行','res':'B站搜"SQL JOIN 通俗讲解"','resUrl':'https://search.bilibili.com/all?keyword=SQL+JOIN+%E9%80%9A%E4%BF%97','time':'25分钟'},
+    {text:'理解LEFT JOIN:保留左表所有行,右表匹配不上的就显示NULL。这是最常用的JOIN类型','time':'20分钟'},
+    {text:'做SQLZoo第6节(06 JOIN),用game/goal表练习','time':'25分钟'}
+  ]},
+  {day:27,phase:2,title:'JOIN进阶',goal:'三表连接,自连接,理解不同JOIN的区别',tasks:[
+    {text:'多表JOIN:三张表怎么连?=SELECT ... FROM A JOIN B ON ... JOIN C ON ...→注意ON条件要配对','time':'20分钟'},
+    {text:'理解JOIN的本质:JOIN=把两张表的行按条件配对,产生一张"宽表"','time':'15分钟'},
+    {text:'做SQLZoo第6节(06 JOIN)剩余题目','time':'25分钟'},
+    {text:'实战练习:假设你有两张表——用户表(用户ID,昵称,等级)和购买表(用户ID,购买金额,日期),写出SQL查"各等级用户的平均购买金额"','time':'20分钟'}
+  ]},
+  {day:28,phase:2,title:'JOIN + GROUP BY综合',goal:'把JOIN和分组汇总结合起来',tasks:[
+    {text:'组合练习:JOIN两张表→GROUP BY→聚合函数。这是工作中最常见的查询模式','time':'25分钟'},
+    {text:'在牛客网找"JOIN"相关SQL题,做8-10道','time':'35分钟'},
+    {text:'整理笔记:画出INNER JOIN/LEFT JOIN/RIGHT JOIN的维恩图,贴在你能看到的地方','time':'10分钟'}
+  ]},
+  {day:29,phase:2,title:'子查询',goal:'能在一个查询里嵌套另一个查询',tasks:[
+    {text:'理解子查询:SELECT ... FROM ... WHERE col IN (SELECT ...)。子查询=先跑里面的查询,把结果给外层查询用','res':'B站搜"SQL子查询"','resUrl':'https://search.bilibili.com/all?keyword=SQL%E5%AD%90%E6%9F%A5%E8%AF%A2','time':'25分钟'},
+    {text:'FROM子查询:把子查询结果当成一张临时表用。=SELECT * FROM (SELECT ... ) AS tmp WHERE ...','time':'20分钟'},
+    {text:'做SQLZoo第4节(04 SELECT within SELECT)','time':'25分钟'}
+  ]},
+  {day:30,phase:2,title:'窗口函数入门',goal:'理解什么是窗口函数,会用ROW_NUMBER排名',tasks:[
+    {text:'理解窗口函数:ROW_NUMBER() OVER (PARTITION BY col ORDER BY col)。按分组排序编号','res':'B站搜"SQL窗口函数"','resUrl':'https://search.bilibili.com/all?keyword=SQL%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0','time':'30分钟'},
+    {text:'练习:RANK vs ROW_NUMBER vs DENSE_RANK的区别。什么时候用哪个?','time':'20分钟'},
+    {text:'实战练习:给靓号按规律类型分组,组内按价格排名','time':'20分钟'}
+  ]},
+  {day:31,phase:2,title:'窗口函数进阶',goal:'SUM OVER / AVG OVER / LAG / LEAD',tasks:[
+    {text:'SUM() OVER():累计求和。练习:按日期累计销售额','time':'25分钟'},
+    {text:'LAG和LEAD:分别取前一行和后一行的值。练习:计算每一天跟前一天的销售差额','time':'25分钟'},
+    {text:'在牛客网找窗口函数相关题目,做5-8道','time':'25分钟'}
+  ]},
+  {day:32,phase:2,title:'综合刷题(一)',goal:'大量刷题,把SQL变成肌肉记忆',tasks:[
+    {text:'牛客网SQL题库:从简单难度开始,做15道题。每道题限时5分钟','res':'牛客网: https://www.nowcoder.com/exam/oj?tab=SQL%E7%AF%87','resUrl':'https://www.nowcoder.com/exam/oj?tab=SQL%E7%AF%87','time':'60分钟'},
+    {text:'整理错题:把做错的或超时的题目标注出来,分析原因','time':'15分钟'}
+  ]},
+  {day:33,phase:2,title:'综合刷题(二)',goal:'挑战中等难度',tasks:[
+    {text:'牛客网中等难度SQL题,做10道','time':'50分钟'},
+    {text:'模拟面试场景:找一道中等题,不看提示独立完成,计时15分钟','time':'25分钟'}
+  ]},
+  {day:34,phase:2,title:'SQL自由练习日',goal:'弹性日,查漏补缺',tasks:[
+    {text:'弹性日:回顾Day 19-33,重做错题,练薄弱环节','time':'60分钟'}
+  ]},
+  {day:35,phase:2,title:'SQL自由练习日',goal:'弹性日,查漏补缺',tasks:[
+    {text:'弹性日:回顾Day 19-33,重做错题,练薄弱环节','time':'60分钟'}
+  ]},
+  {day:36,phase:2,title:'SQL自由练习日',goal:'弹性日,查漏补缺',tasks:[
+    {text:'弹性日:回顾Day 19-33,重做错题,练薄弱环节','time':'60分钟'}
+  ]},
+
+  // ===== 阶段三: AI辅助分析 (Day 37-48) =====
+  {day:37,phase:3,title:'AI辅助分析-核心思路',goal:'理解:你不需要会写代码,你需要会描述问题',tasks:[
+    {text:'核心认知转变:之前你学会了自己分析(Excel透视+SQL取数)。现在AI可以帮你做更复杂的部分——你描述需求,AI写代码','res':'阅读这篇文章,理解"AI辅助数据分析"是什么概念','resUrl':'https://www.bilibili.com/','time':'15分钟'},
+    {text:'好的指令 vs 差的指令:对比"帮我分析数据"和"我有一个CSV文件,列是:日期/用户ID/活动名/是否购买。帮我用Python分析:(1)每个活动的参与人数(2)参与后购买的比例(3)按日期画参与人数趋势线"','time':'25分钟'},
+    {text:'练习:拿你的靓号数据,用中文写3个"你想让AI帮你分析什么"的问题,越具体越好','time':'25分钟'},
+    {text:'准备:在你现在用的Claude Code或任何AI工具里,实际发一个问题试试看AI能不能给你可用的分析结论','time':'15分钟'}
+  ]},
+  {day:38,phase:3,title:'AI写Python-环境准备',goal:'在你的电脑上装好Python,能跑AI生成的代码',tasks:[
+    {text:'下载并安装Python:去python.org下载最新版→安装时勾选"Add Python to PATH"→安装完成后打开命令行→输入python --version→确认显示版本号','res':'Python下载: https://www.python.org/downloads/','resUrl':'https://www.python.org/downloads/','time':'25分钟'},
+    {text:'安装pandas:命令行输入 pip install pandas→等待安装完成→输入python→输入import pandas→如果不报错就是装好了','time':'15分钟'},
+    {text:'跑通第一段AI写的代码:让AI帮你生成一段"读取CSV文件并打印前10行"的代码→粘贴到记事本→另存为test.py→命令行输入python test.py→看结果','time':'25分钟'}
+  ]},
+  {day:39,phase:3,title:'AI辅助数据清洗',goal:'用AI帮你洗数据,比自己手动快10倍',tasks:[
+    {text:'学会描述数据:把数据的基本信息告诉AI——"我有一个CSV,列名是...大概有X行,其中XX列有空值,XX列的格式是..."','time':'15分钟'},
+    {text:'让AI写清洗代码:告诉AI你要怎么清洗(去重/填缺失值/统一日期格式/删除异常行)→AI返回代码→你运行→检查结果→不对就再描述一遍','time':'30分钟'},
+    {text:'实战:拿你的活动数据(导出一份CSV),让AI帮你洗成干净的分析表','time':'30分钟'}
+  ]},
+  {day:40,phase:3,title:'AI辅助数据可视化',goal:'让AI帮你画比Excel更好看的图',tasks:[
+    {text:'让AI生成matplotlib代码:描述你想画什么图("柱状图/各活动类型参与人数/蓝色/标题是XX/保存为PNG")→AI返回代码→运行→看图','time':'30分钟'},
+    {text:'学会改图:告诉AI"颜色改成XX""字体调大""把图例放到底部"→让它修改代码','time':'20分钟'},
+    {text:'实战:把你Excel做过的3张图表,用AI+Python重新画一遍,对比效果','time':'25分钟'}
+  ]},
+  {day:41,phase:3,title:'AI辅助统计摘要',goal:'让AI帮你一键生成数据总览',tasks:[
+    {text:'学会让AI生成describe()报告:把数据丢给AI→让它写出每列的统计摘要(数量/均值/标准差/最小/25%/50%/75%/最大/缺失值比例)','time':'25分钟'},
+    {text:'学会让AI发现异常:告诉AI"帮我找出数值列里的异常值(超过均值±3倍标准差的行)"→AI返回代码和结果','time':'25分钟'},
+    {text:'实战:用你的靓号价格数据,让AI做一个完整的数据探索(价格分布/异常高价的号/不同规律类型的价格对比)','time':'25分钟'}
+  ]},
+  {day:42,phase:3,title:'AI辅助报告自动化',goal:'做一个模板,下次换数据自动刷新',tasks:[
+    {text:'设计一个周报模板:让AI帮你写一个Python脚本,功能是:读取CSV→生成3张固定格式的图→把图表和关键数字写入一个Word/HTML文件','time':'35分钟'},
+    {text:'模板化:把上面这个脚本里的"数据源路径""日期""报告标题"做成变量,下次只需改这几行','time':'25分钟'},
+    {text:'实战:做一个"活动复盘报告模板",下次活动结束只需要替换数据文件就能自动出报告','time':'25分钟'}
+  ]},
+  {day:43,phase:3,title:'AI自由练习日',goal:'弹性日',tasks:[
+    {text:'弹性日:回顾Day 37-42,补未完成的任务','time':'60分钟'}
+  ]},
+  {day:44,phase:3,title:'AI进阶:多文件批处理',goal:'能批量处理多个文件,不是一次只能分析一个',tasks:[
+    {text:'让AI写批量读取代码:告诉AI"我有一个文件夹,里面有30个CSV文件,每个文件格式相同,帮我合并成一个大的DataFrame"→AI返回代码→运行','time':'30分钟'},
+    {text:'实战:模拟场景——12个月的活动数据分别存在12个CSV里,合并后做年度趋势分析','time':'30分钟'},
+    {text:'进阶:让AI帮你从合并后的数据里找出"每个月参与人数最高的活动"','time':'20分钟'}
+  ]},
+  {day:45,phase:3,title:'AI辅助分析-综合练习',goal:'独立完成一个完整的AI辅助分析流程',tasks:[
+    {text:'找一个你感兴趣的数据集(不限于靓号,可以是任何公开数据)','time':'10分钟'},
+    {text:'用AI辅助完成全流程:描述数据→让AI写清洗代码→让AI做分析→让AI画图→让AI写报告摘要','time':'50分钟'},
+    {text:'能成功复现整个流程,才算真正掌握了AI辅助分析','time':'15分钟'}
+  ]},
+  {day:46,phase:3,title:'AI辅助分析-综合练习(二)',goal:'换数据再来一遍,加深肌肉记忆',tasks:[
+    {text:'换一个新数据集,再跑一遍全流程','time':'45分钟'},
+    {text:'总结:写一份"AI辅助分析操作清单",以后每次新任务照着做就行','time':'15分钟'}
+  ]},
+  {day:47,phase:3,title:'AI自由练习日',goal:'弹性日',tasks:[
+    {text:'弹性日:回顾Day 37-46,补未完成的任务','time':'60分钟'}
+  ]},
+  {day:48,phase:3,title:'AI自由练习日',goal:'弹性日',tasks:[
+    {text:'弹性日:回顾Day 37-46,补未完成的任务','time':'60分钟'}
+  ]},
+
+  // ===== 阶段四: 项目实战 (Day 49-60) =====
+  {day:49,phase:4,title:'项目一:靓号定价分析-数据整理',goal:'把定价分析做成一个完整的数据分析项目',tasks:[
+    {text:'确定分析目标:你想回答哪几个业务问题?写下来(建议:不同位数的价格分布/规律溢价排行/黄金销售区间验证/哪些号定价不合理)','time':'15分钟'},
+    {text:'整理数据:从你的靓号库里提取需要的列(位数/规律类型/价格/上架状态),导出为CSV','time':'20分钟'},
+    {text:'用Excel+SQL做初步探索:各位数均价?各规律类型均价?价格最高/最低的10个号?','time':'25分钟'}
+  ]},
+  {day:50,phase:4,title:'项目一:靓号定价分析-深度分析',goal:'用AI辅助做深度分析,产出可视化报告',tasks:[
+    {text:'用AI辅助做价格分布图:箱线图看各位数价格分布→直方图看整体价格分布→散点图看"位数vs价格"关系','time':'30分钟'},
+    {text:'分析规律溢价:不同规律类型的平均溢价幅度?哪种规律溢价最高?含888到底溢价了多少倍?','time':'20分钟'},
+    {text:'验证黄金销售区间:50-180乐元这个区间的销量占比是多少?这个定价策略还成立吗?','time':'20分钟'}
+  ]},
+  {day:51,phase:4,title:'项目一:靓号定价分析-报告输出',goal:'产出一份完整的分析报告PDF',tasks:[
+    {text:'写分析报告:背景(为什么要分析)→数据说明(有多少条/哪些字段)→分析过程(用了什么方法)→核心发现(3-5个)→业务建议(该涨价的/该降价的/该做活动的)','time':'40分钟'},
+    {text:'排版:用AI帮你把报告整理成一个美观的PDF或Word文档','time':'20分钟'},
+    {text:'自我评价:这份报告如果给不懂靓号的人看,他能看懂吗?不能的话哪里要改?','time':'15分钟'}
+  ]},
+  {day:52,phase:4,title:'项目一:靓号定价分析-打磨',goal:'完善项目,准备放入作品集',tasks:[
+    {text:'根据昨天的自我评价修改报告','time':'30分钟'},
+    {text:'提炼一个"电梯演讲"版本:用3句话讲清楚你做了什么→发现了什么→建议了什么(面试时能在1分钟内讲完)','time':'20分钟'},
+    {text:'保存项目所有文件:原始数据/分析过程截图/最终报告→打包到一个文件夹,命名"项目1-靓号定价分析"','time':'10分钟'}
+  ]},
+  {day:53,phase:4,title:'项目二:活动效果对比-数据整理',goal:'第二个项目,展示你的多维度对比分析能力',tasks:[
+    {text:'确定分析目标:对比13场活动的效果,找出高参与率活动的共同特征','time':'15分钟'},
+    {text:'整理数据:把你能回忆/提取的活动数据整理成一张表(活动名/类型/日期/参与人数/购买人数/发放券数/...)','time':'25分钟'},
+    {text:'初步分析:按活动类型分组,算平均参与人数;按月份看活动频率;高参与和低参与活动的差异是什么?','time':'25分钟'}
+  ]},
+  {day:54,phase:4,title:'项目二:活动效果对比-深度分析',goal:'找出什么类型的活动效果最好',tasks:[
+    {text:'用AI辅助做多维对比:竞拍vs折扣vs打卡vs节日,四类活动的参与率/转化率/用户活跃度对比','time':'30分钟'},
+    {text:'时间维度分析:活动效果是不是受时间影响?(节假日效果>平时?月初>月末?)','time':'20分钟'},
+    {text:'价值分析:哪类活动带来的购买金额最高?哪类活动用户留存最好(活动后还会再来)?','time':'20分钟'}
+  ]},
+  {day:55,phase:4,title:'项目二:活动效果对比-报告输出',goal:'产出第二份完整报告',tasks:[
+    {text:'写报告:背景→13场活动概览→多维度对比→核心发现→活动设计建议(下次该做什么类型的活动)','time':'35分钟'},
+    {text:'至少包含3张对比图表','time':'20分钟'},
+    {text:'为这个项目写3句话的电梯演讲','time':'10分钟'}
+  ]},
+  {day:56,phase:4,title:'项目二:活动效果对比-打磨',goal:'完善第二个项目',tasks:[
+    {text:'修改润色报告','time':'25分钟'},
+    {text:'如果数据不够多(有些早期活动记录不全),在报告里诚实标注"数据不完整",这反而是加分项——说明你有数据质量意识','time':'15分钟'},
+    {text:'保存:打包到"项目2-活动效果对比分析"','time':'10分钟'}
+  ]},
+  {day:57,phase:4,title:'项目三:公开数据集分析-选题',goal:'找一个你感兴趣的外部数据集,展示你能面对陌生数据',tasks:[
+    {text:'选数据集:去Kaggle(Datasets)或国家统计局网站,搜你感兴趣的主题——电影/游戏/体育/天气/人口/消费。找到一个你能理解的数据集','res':'Kaggle: https://www.kaggle.com/datasets','resUrl':'https://www.kaggle.com/datasets','time':'30分钟'},
+    {text:'探索数据:下载后用Excel/SQL打开,了解有哪些列、大概多少行、数据质量如何','time':'25分钟'},
+    {text:'确定分析方向:你想从这份数据里发现什么?写下3个你想回答的问题','time':'15分钟'}
+  ]},
+  {day:58,phase:4,title:'项目三:公开数据集分析-分析',goal:'独立完成完整分析',tasks:[
+    {text:'用Excel透视表做初步探索','time':'20分钟'},
+    {text:'用AI辅助做深度分析和可视化','time':'30分钟'},
+    {text:'找出至少一个"反直觉"的发现——不是显而易见的结论,而是需要分析才能发现的','time':'20分钟'}
+  ]},
+  {day:59,phase:4,title:'项目三:公开数据集分析-报告',goal:'产出第三份报告+作品集整合',tasks:[
+    {text:'写报告:每个项目都是同样的结构(背景→数据→方法→发现→建议),形成你的分析报告模板','time':'30分钟'},
+    {text:'整理三个项目的作品集:3份报告+3个电梯演讲→放在同一个文件夹,命名"数据分析作品集"','time':'15分钟'},
+    {text:'整理一张"技能清单":列出你现在会什么(Excel/透视表/函数/图表/SQL/JOIN/窗口函数/AI辅助分析/Python基础),每一项后面写一个"我用这个技能做过什么"','time':'15分钟'}
+  ]},
+  {day:60,phase:4,title:'完结:整理输出,准备下一个阶段',goal:'60天计划完成,整理全部成果',tasks:[
+    {text:'回顾:从头到尾翻一遍这60天的任务记录,看看自己完成了多少','time':'15分钟'},
+    {text:'技能盘点:你现在能做什么?(一条条列出来)你还不会什么?(列出来,这是下一步的学习方向)','time':'20分钟'},
+    {text:'更新简历:把三个项目和学到的技能写进简历(参考之前给你的简历改写建议)','time':'20分钟'},
+    {text:'下一步计划:60天结束了,但学习没结束。给自己定下一个目标——什么时候开始投简历?投什么方向?','time':'15分钟'}
+  ]}
+];
+
+// ==================== 状态管理 ====================
+const STORAGE_KEY = 'data_learning_tracker_state';
+
+function defaultState(){
+  return {
+    currentDay:1,           // 当前学习日 1-60
+    completedDays:{},       // {dayNum:true}
+    rolloverTasks:[],       // [{dayNum,text,res,resUrl,time}]
+    todayCheckedIn:false,
+    todayTaskStatus:{},     // {"dayNum-taskIdx":"done"|"undone"}
+    streak:0,
+    lastActiveDate:null,    // 'YYYY-MM-DD'
+    totalDone:0,
+  };
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      // 合并默认值,处理版本升级
+      const def = defaultState();
+      for(const k of Object.keys(def)){
+        if(!(k in s)) s[k]=def[k];
+      }
+      return s;
+    }
+  }catch(e){}
+  return defaultState();
+}
+
+function saveState(state){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ==================== 工具函数 ====================
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function dayOfWeek(){
+  return new Date().getDay(); // 0=Sun, 6=Sat
+}
+
+function isWeekend(){
+  const d = dayOfWeek();
+  return d===0 || d===6;
+}
+
+function getDayData(dayNum){
+  return CURRICULUM.find(d=>d.day===dayNum) || null;
+}
+
+function getPhaseName(phase){
+  const names={1:'阶段一:Excel进阶',2:'阶段二:SQL基础',3:'阶段三:AI辅助分析',4:'阶段四:项目实战'};
+  return names[phase]||'';
+}
+
+function getPhaseColor(phase){
+  const colors={1:'phase1',2:'phase2',3:'phase3',4:'phase4'};
+  return colors[phase]||'phase1';
+}
+
+function getDaysInPhase(phase){
+  return CURRICULUM.filter(d=>d.phase===phase).length;
+}
+
+function getCompletedDaysInPhase(phase, completedDays){
+  return CURRICULUM.filter(d=>d.phase===phase && completedDays[d.day]).length;
+}
+
+// ==================== 渲染 ====================
+let state = loadState();
+
+function renderAll(){
+  checkNewDay();
+  renderDashboard();
+  renderDailyContent();
+  renderPhaseNav();
+}
+
+function checkNewDay(){
+  const now = todayStr();
+  if(state.lastActiveDate && state.lastActiveDate !== now){
+    // 新的一天
+    if(!state.todayCheckedIn){
+      // 昨天没打卡,重置当日状态
+      // 但保留未完成的任务作为rollover
+      const undoneTasks = [];
+      const prevDayData = getDayData(state.currentDay);
+      if(prevDayData){
+        prevDayData.tasks.forEach((t,i)=>{
+          const key = `${state.currentDay}-${i}`;
+          if(state.todayTaskStatus[key] !== 'done'){
+            undoneTasks.push({...t, fromDay:state.currentDay});
+          }
+        });
+      }
+      // 如果有未完成任务,加入rollover
+      if(undoneTasks.length>0){
+        state.rolloverTasks = [...undoneTasks, ...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay)];
+      }
+      // 如果昨天完成了所有任务,推进到下一天
+      const allDone = prevDayData ? prevDayData.tasks.every((t,i)=>{
+        return state.todayTaskStatus[`${state.currentDay}-${i}`]==='done';
+      }) : true;
+      if(allDone && state.currentDay < 60){
+        state.currentDay++;
+      }
+      state.todayCheckedIn = false;
+      state.todayTaskStatus = {};
+    }
+  }
+  state.lastActiveDate = now;
+  saveState(state);
+}
+
+function renderDashboard(){
+  const d = getDayData(state.currentDay);
+  const phase = d ? d.phase : 1;
+  document.getElementById('stat-day').textContent = state.currentDay;
+  document.getElementById('stat-streak').textContent = state.streak;
+  document.getElementById('stat-done').textContent = Object.keys(state.completedDays).length;
+  document.getElementById('stat-rate').textContent = Math.round(Object.keys(state.completedDays).length/60*100)+'%';
+
+  // 阶段进度条
+  const bar = document.getElementById('phaseBar');
+  bar.innerHTML = '';
+  for(let p=1;p<=4;p++){
+    const seg = document.createElement('div');
+    seg.className = 'phase-seg';
+    const total = getDaysInPhase(p);
+    const done = getCompletedDaysInPhase(p, state.completedDays);
+    if(done===total && total>0) seg.classList.add('done');
+    if(p===phase) seg.classList.add('current');
+    seg.title = `${getPhaseName(p)}: ${done}/${total}`;
+    bar.appendChild(seg);
+  }
+}
+
+function renderDailyContent(){
+  const container = document.getElementById('dailyContent');
+  const d = getDayData(state.currentDay);
+  const phase = d ? d.phase : 1;
+  const weekend = isWeekend();
+
+  let html = '';
+
+  // 周末提示
+  if(weekend){
+    html += `<div class="card weekend-banner">
+      <div class="icon">☕</div>
+      <strong>弹性日</strong><br>
+      <span style="color:var(--sub);font-size:.85rem">今天是周末,没有排新内容。补上本周未完成的任务,或者给自己放个假。</span>
+    </div>`;
+  }
+
+  // 主课程卡片
+  html += `<div class="card">
+    <div class="card-header">
+      <div class="day-title-row">
+        <span class="badge badge-phase${phase}">${getPhaseName(phase)}</span>
+        <span class="card-title">Day ${state.currentDay}${weekend?' · 弹性日':''}: ${d?d.title:'自由练习'}</span>
+      </div>
+      ${state.todayCheckedIn ? '<span class="badge badge-done">已签到</span>' : ''}
+    </div>`;
+
+  if(d && d.goal){
+    html += `<div class="day-goal">🎯 ${d.goal}</div>`;
+  }
+
+  // Rollover任务
+  if(state.rolloverTasks.length>0){
+    html += `<div class="section-label">📌 昨天未完成的任务</div><ul class="task-list">`;
+    state.rolloverTasks.forEach((t,i)=>{
+      html += renderTaskItem(t, `rollover-${i}`, true);
+    });
+    html += `</ul>`;
+  }
+
+  // 当日任务
+  if(!weekend && d){
+    html += `<div class="section-label">📋 今日任务</div><ul class="task-list">`;
+    d.tasks.forEach((t,i)=>{
+      const key = `${state.currentDay}-${i}`;
+      html += renderTaskItem(t, key, false);
+    });
+    html += `</ul>`;
+  }else if(weekend && state.rolloverTasks.length===0){
+    html += `<div class="empty-state">
+      <div class="icon">🎉</div>
+      <p>没有积压任务！休息一下,或者回顾本周学过的内容。</p>
+    </div>`;
+  }
+
+  // 操作按钮
+  html += `<div class="timer-display" id="timerDisplay" style="display:none">⏱️ 学习中...</div>`;
+  html += `<div class="actions-row">`;
+  if(!state.todayCheckedIn){
+    html += `<button class="btn btn-primary btn-block" id="btnCheckin" onclick="checkin()">📖 开始学习</button>`;
+  }else{
+    html += `<button class="btn btn-outline btn-block" id="btnCheckout" onclick="checkout()">✅ 结束学习</button>`;
+  }
+  html += `</div>`;
+
+  // 跳过按钮(周末或弹性日)
+  if(weekend && state.rolloverTasks.length===0){
+    html += `<div class="actions-row" style="margin-top:6px">
+      <button class="btn btn-outline btn-sm btn-block" onclick="skipDay()">跳过今天(标记完成)</button>
+    </div>`;
+  }
+
+  html += `</div>`;
+
+  container.innerHTML = html;
+
+  // 恢复任务勾选状态
+  if(d){
+    d.tasks.forEach((t,i)=>{
+      const key = `${state.currentDay}-${i}`;
+      if(state.todayTaskStatus[key]==='done'){
+        const el = document.getElementById(`task-${key}`);
+        if(el) el.classList.add('checked');
+        const cb = document.getElementById(`cb-${key}`);
+        if(cb) cb.classList.add('done');
+      }
+    });
+  }
+}
+
+function renderTaskItem(t, key, isRollover){
+  const done = state.todayTaskStatus[key]==='done';
+  return `<li class="task-item${done?' checked':''}${isRollover?' rollover':''}" id="task-${key}" onclick="toggleTask('${key}')">
+    <div class="task-checkbox${done?' done':''}" id="cb-${key}"></div>
+    <div class="task-body">
+      <div class="task-text">${t.text}</div>
+      ${t.res ? `<div class="task-resource">${t.resUrl ? `<a href="${t.resUrl}" target="_blank" onclick="event.stopPropagation()">${t.res}</a>` : t.res}</div>` : ''}
+      ${t.time ? `<div class="task-time">⏱️ 预计${t.time}</div>` : ''}
+    </div>
+  </li>`;
+}
+
+function renderPhaseNav(){
+  const container = document.getElementById('phaseList');
+  let html = '';
+  for(let p=1;p<=4;p++){
+    const total = getDaysInPhase(p);
+    const done = getCompletedDaysInPhase(p, state.completedDays);
+    const isCurrent = getDayData(state.currentDay)?.phase === p;
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span class="badge badge-${getPhaseColor(p)}">${getPhaseName(p)}</span>
+      <span style="flex:1;font-size:.85rem">${done}/${total} 天完成</span>
+      ${isCurrent ? '<span style="color:var(--accent);font-size:.75rem">← 当前</span>' : ''}
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ==================== 交互 ====================
+function toggleTask(key){
+  if(!state.todayCheckedIn) return; // 还没签到,不能操作
+  if(state.todayTaskStatus[key]==='done'){
+    state.todayTaskStatus[key] = 'undone';
+  }else{
+    state.todayTaskStatus[key] = 'done';
+  }
+  saveState(state);
+  renderDailyContent();
+}
+
+function checkin(){
+  state.todayCheckedIn = true;
+  state.streak = (state.streak||0) + 1;
+  saveState(state);
+  renderDailyContent();
+  // 启动计时器
+  let seconds = 0;
+  const timerEl = document.getElementById('timerDisplay');
+  if(timerEl){
+    timerEl.style.display = 'block';
+    const interval = setInterval(()=>{
+      seconds++;
+      const m = Math.floor(seconds/60);
+      const s = seconds%60;
+      timerEl.textContent = `⏱️ 学习中: ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    },1000);
+    timerEl._interval = interval;
+  }
+}
+
+function checkout(){
+  const d = getDayData(state.currentDay);
+  if(!d) return;
+
+  const totalTasks = d.tasks.length;
+  let doneCount = 0;
+  d.tasks.forEach((t,i)=>{
+    const key = `${state.currentDay}-${i}`;
+    if(state.todayTaskStatus[key]==='done') doneCount++;
+  });
+
+  // 停止计时器
+  const timerEl = document.getElementById('timerDisplay');
+  if(timerEl && timerEl._interval){
+    clearInterval(timerEl._interval);
+    timerEl.style.display = 'none';
+    const studyMin = Math.floor((timerEl.textContent.match(/(\d+):(\d+)/)||['','0','0']).slice(1).reduce((a,b)=>parseInt(a)*60+parseInt(b),0)/60);
+    state.totalStudyMinutes = (state.totalStudyMinutes||0) + studyMin;
+  }
+
+  // 弹窗
+  const modal = document.getElementById('checkoutModal');
+  const msg = document.getElementById('modalMsg');
+  msg.textContent = `你完成了 ${doneCount}/${totalTasks} 个任务。`;
+  modal.style.display = 'flex';
+
+  document.getElementById('btnDone').onclick = ()=>{
+    // 学完了
+    state.completedDays[state.currentDay] = true;
+    state.todayCheckedIn = false;
+    state.todayTaskStatus = {};
+    state.rolloverTasks = []; // 清空rollover
+
+    // RLOVER tasks: clear all rollover items
+    // 保存完成状态
+    saveState(state);
+
+    // 推进到下一天
+    if(state.currentDay < 60){
+      state.currentDay++;
+    }
+    saveState(state);
+    modal.style.display = 'none';
+    renderAll();
+  };
+
+  document.getElementById('btnNotDone').onclick = ()=>{
+    // 没学完——未完成的任务滚到明天
+    const undone = [];
+    d.tasks.forEach((t,i)=>{
+      const key = `${state.currentDay}-${i}`;
+      if(state.todayTaskStatus[key]!=='done'){
+        undone.push({...t, fromDay:state.currentDay});
+      }
+    });
+
+    // 标记当天为非完成(即使部分完成也不标记)
+    // 未完成任务加到rollover
+    state.rolloverTasks = [...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay), ...undone];
+    state.todayCheckedIn = false;
+    state.todayTaskStatus = {};
+    state.streak = Math.max(0,(state.streak||1)-1);
+
+    if(state.currentDay < 60){
+      state.currentDay++;
+    }
+    saveState(state);
+    modal.style.display = 'none';
+    renderAll();
+  };
+}
+
+function skipDay(){
+  // 跳过周末/弹性日
+  state.completedDays[state.currentDay] = true;
+  state.todayCheckedIn = false;
+  state.todayTaskStatus = {};
+  state.rolloverTasks = [];
+  if(state.currentDay < 60){
+    state.currentDay++;
+  }
+  saveState(state);
+  renderAll();
+}
+
+// 关闭弹窗(点击背景)
+document.getElementById('checkoutModal').addEventListener('click', function(e){
+  if(e.target === this){
+    this.style.display = 'none';
+  }
+});
+
+// ==================== 初始化 ====================
+renderAll();
+
+console.log('📊 数据分析自学打卡系统已就绪');
+console.log(`当前: Day ${state.currentDay} | 已完成: ${Object.keys(state.completedDays).length}/60 | 连续: ${state.streak}天`);
+console.log('数据存储在浏览器 localStorage,不会丢失');
+</script>
+</body>
+</html>
