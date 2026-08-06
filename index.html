@@ -74,6 +74,20 @@ header .subtitle{color:var(--sub);font-size:.85rem}
   .stats-row{grid-template-columns:repeat(2,1fr)}
   header h1{font-size:1.25rem}
 }
+/* 测验样式 */
+.quiz-question{margin-bottom:16px;text-align:left}
+.quiz-q-text{font-weight:600;margin-bottom:8px;font-size:.92rem}
+.quiz-option{display:block;width:100%;text-align:left;padding:10px 14px;margin-bottom:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.88rem;cursor:pointer;transition:all .15s}
+.quiz-option:hover{border-color:var(--accent);background:rgba(79,143,247,.06)}
+.quiz-option.selected{border-color:var(--accent);background:rgba(79,143,247,.12);color:var(--accent);font-weight:600}
+.quiz-option.correct{border-color:var(--done);background:rgba(46,204,113,.12);color:var(--done)}
+.quiz-option.wrong{border-color:var(--danger);background:rgba(231,76,60,.08);color:var(--danger)}
+.quiz-result{padding:10px 14px;border-radius:8px;margin-top:8px;font-size:.82rem}
+.quiz-result.pass{background:rgba(46,204,113,.1);color:var(--done)}
+.quiz-result.fail{background:rgba(231,76,60,.1);color:var(--danger)}
+.quiz-score{font-size:2rem;font-weight:800;text-align:center;margin:12px 0}
+.quiz-explain{font-size:.8rem;color:var(--sub);margin-top:4px;padding:8px;background:rgba(79,143,247,.06);border-radius:6px}
+.modal-wide{max-width:560px!important;max-height:85vh;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -112,6 +126,20 @@ header .subtitle{color:var(--sub);font-size:.85rem}
     <div class="modal-btns">
       <button class="btn btn-outline" id="btnNotDone">没学完</button>
       <button class="btn btn-primary" id="btnDone">学完了！</button>
+    </div>
+  </div>
+</div>
+
+<!-- 测验弹窗 -->
+<div class="modal-overlay" id="quizModal" style="display:none">
+  <div class="modal modal-wide">
+    <h3 id="quizTitle">📝 今日测验</h3>
+    <p id="quizSub" style="color:var(--sub);font-size:.8rem;margin-bottom:16px">共 X 题，答对 Y 题(≥70%)即可通关</p>
+    <div id="quizQuestions"></div>
+    <div id="quizResult" style="display:none"></div>
+    <div class="modal-btns" id="quizBtns" style="margin-top:16px">
+      <button class="btn btn-outline" id="btnQuizSkip" style="font-size:.8rem">跳过测验(标记未完成)</button>
+      <button class="btn btn-primary" id="btnQuizSubmit" disabled>提交答案</button>
     </div>
   </div>
 </div>
@@ -424,6 +452,107 @@ const CURRICULUM = [
   ]}
 ];
 
+// ==================== 每日测验数据 ====================
+// 及格线70%,每题等分。无测验的天自动通过。
+const QUIZZES = {
+1:{passing:70,questions:[
+{q:'在Excel中,如果你找不到某个功能按钮,最快的方法是什么?',opts:['挨个选项卡点开找','用顶部的搜索栏(告诉我你想要做什么)','百度搜"Excel有没有XX功能"','右键乱点看菜单'],ans:1,why:'Excel顶部有"告诉我你想要做什么"搜索框(2016+),直接打字搜功能比手动翻快得多。'},
+{q:'以下哪个不属于Excel的选项卡?',opts:['开始','插入','公式','编程'],ans:3,why:'Excel标准选项卡是:开始/插入/页面布局/公式/数据/审阅/视图。没有"编程"这个选项卡。'},
+{q:'你新建了一个工作表,想把它从Sheet2改名为"分析结果",怎么做?',opts:['右键Sheet2标签→重命名','开始→格式→重命名工作表','以上两种都可以','需要去设置里改'],ans:2,why:'两种方法都可以。双击工作表标签也能直接重命名。'}
+]},
+2:{passing:70,questions:[
+{q:'在Excel单元格里输入"123"(带引号)和在另一个单元格里输入123(不带引号),有什么区别?',opts:['没有区别,都一样','带引号的是文本(左对齐),不带引号的是数字(右对齐)','带引号的不能参与计算','带引号的会自动转成数字'],ans:1,why:'文本型"123"默认左对齐且不能直接参与数学运算;数字型123默认右对齐,可以计算。这是数据分析里最常见的数据类型问题。'},
+{q:'Ctrl+E(快速填充)的正确用法是什么?',opts:['选中一列→Ctrl+E→自动填充序号','在目标列手打两行示例→选中→Ctrl+E→Excel自动补全','选中整张表→Ctrl+E→自动格式化','Ctrl+E只能填充日期格式'],ans:1,why:'Ctrl+E会根据你给出的2-3个示例自动识别规则并补全。拆分姓名+手机号、格式化日期、提取特定字符——这些都能用Ctrl+E。'},
+{q:'日期2026-08-06在Excel中实际存储的是什么?',opts:['一串文本"2026-08-06"','一个数字(从1900-01-01起算的天数)','三个独立的数字(年/月/日)','看你怎么设置的'],ans:1,why:'Excel内部把日期存储为序列号(1900-01-01=1,2026-08-06≈46252)。格式只是显示方式,不影响实际值。这个理解对后续日期计算很重要。'}
+]},
+3:{passing:70,questions:[
+{q:'你想从靓号列表里筛出所有"含888且价格>100"的号。应该怎么做?',opts:['只能用筛选功能','筛价格>100→复制出来→再手动找含888的','筛价格>100→在筛选后的结果里再用文本筛选"包含888"','Excel做不到,需要用SQL'],ans:2,why:'筛选支持叠加:先筛数字列(价格>100),再在结果上筛文本列(包含888)。多次筛选是叠加关系(AND)。'},
+{q:'自定义排序和筛选有什么区别?',opts:['没有区别,都是整理数据','排序改变行的顺序,筛选只是隐藏不符合条件的行','筛选比排序功能强大','排序只能按一列排'],ans:1,why:'排序是重新排列行(数据还在,顺序变了);筛选是临时隐藏不符合条件的行(数据没变,只是看不见)。两者可以配合使用。'},
+{q:'你想按"位数→价格从大到小"排序,怎么做?',opts:['先排位数再排价格,Excel会自动叠加','排序→添加条件→第一关键字:位数升序→第二关键字:价格降序','先排价格再排位数','只能排一个条件'],ans:1,why:'Excel支持多条件排序:数据→排序→添加条件。按优先级从上到下依次排序。'}
+]},
+4:{passing:70,questions:[
+{q:'你有一列"用户ID+活动日期"的数据(如48360054-20260806),想拆成两列。用什么功能?',opts:['手动复制粘贴','数据→分列→按分隔符"-"','查找替换','用函数IF'],ans:1,why:'分列功能(数据→分列)专门处理这种情况。选"分隔符号"→输入"-"→完成。按固定宽度分列适用于每段长度一致的情况。'},
+{q:'删除重复项时,你选了"用户ID"和"活动日期"两列作为判断条件,这代表什么?',opts:['只要用户ID重复就删','只要活动日期重复就删','两列同时相同的行才被视为重复','每列分别去重'],ans:2,why:'多列去重=所有选中列的值都相同的行被视为重复。如果只勾"用户ID"去重,同一个人的多条记录会被误删。'},
+{q:'查找替换(Ctrl+H)里怎么替换换行符?',opts:['在查找栏输入\\n','在查找栏按Alt+Enter','在查找栏输入\\r\\n','Excel不支持替换换行符'],ans:1,why:'在查找替换的查找栏里按Alt+Enter,Excel会识别为换行符。这在清洗"一个单元格里有多行"的数据时经常用到。'}
+]},
+5:{passing:70,questions:[
+{q:'你想限制"价格"这一列只能输入50到180之间的整数,防止有人输入错误。用什么功能?',opts:['条件格式','数据验证','单元格格式','锁定工作表'],ans:1,why:'数据验证(数据→数据验证)可以限制输入:整数范围/小数范围/下拉列表/日期范围/自定义公式。条件格式只是"标色提醒",不能限制输入。'},
+{q:'条件格式中的"数据条"有什么作用?',opts:['给数据加密','在单元格背景上画长度不等的色条,一眼看出数值大小对比','检查数据是否合规','只能标记重复值'],ans:1,why:'数据条/色阶/图标集都是数据可视化的工具,直接在单元格里显示,不需要单独做图表。适合快速扫一眼看分布和异常值。'},
+{q:'你给价格列设置了条件格式:>180标红,<50标绿。现在新加了一行数据价格=200,它会自动标红吗?',opts:['会,新增数据会自动应用条件格式','不会,需要重新设置','取决于你是复制粘贴还是手动输入','只有刷新页面才会'],ans:0,why:'条件格式会自动应用到新增的行。但要注意:如果条件格式的应用范围没包含新行,需要更新范围。设置时选中整列可以避免这个问题。'}
+]},
+6:{passing:70,questions:[
+{q:'数据透视表的四个区域中,"值"区域放的是什么?',opts:['用来分类的字段(比如按活动类型分)','你要汇总计算的数据(比如参与人数、销售金额)','用来切片的字段','用来筛选的字段'],ans:1,why:'行/列=按什么分类,值=要汇总计算什么(计数/求和/平均),筛选器=整体按什么条件筛。'},
+{q:'你想看"每个活动类型的平均参与人数",怎么做?',opts:['活动类型拖到行→参与人数拖到值→默认就是平均值','活动类型拖到行→参与人数拖到值→右键设置→选平均值','透视表做不到平均,只能用函数','活动类型拖到行→参与人数拖两次'],ans:1,why:'透视表默认对数字求和、对文本计数。要算平均值:值字段设置→值字段汇总方式→平均值。'},
+{q:'以下哪项是对数据透视表最准确的描述?',opts:['一种高级图表','一种交互式数据汇总工具,可以快速从不同维度看数据','Excel的替代品','只能用来做报表'],ans:1,why:'透视表的核心价值是"灵活切维度":同一份数据,拖动几下就能从不同角度做汇总(按时间/按类别/按价格区间...),不需要写公式。'}
+]},
+7:{passing:70,questions:[
+{q:'你想把按日统计的活动数据变成按月汇总,在透视表里怎么做?',opts:['手动把每天的数据归类到月份','右键日期字段→组合→选择"月"','删掉每天的记录重新填月','用VLOOKUP匹配月份'],ans:1,why:'透视表右键日期→组合→可以按秒/分/小时/日/月/季度/年分组。数值也可以分组(价格按50-100-150区间)。这是透视表最实用的功能之一。'},
+{q:'切片器的作用是什么?',opts:['把数据切成小块导出','一个可视化的筛选面板,点按钮就能切换透视表的筛选条件','一种图表类型','给数据加密'],ans:1,why:'切片器=透视表的遥控器。插入切片器→选字段(如"活动类型")→出现一排按钮→点哪个类型,透视表和图表同时切换到该类型的数据。比筛选下拉框直观得多。'}
+]},
+9:{passing:70,questions:[
+{q:'COUNT和COUNTA的区别是什么?',opts:['没有区别','COUNT只数数字,COUNTA数所有非空单元格','COUNT数所有,COUNTA只数文本','COUNT只能数一列,COUNTA可以数多列'],ans:1,why:'COUNT只统计包含数字的单元格;COUNTA统计所有非空单元格(包含文本/日期/错误值)。分析数据时用错了会导致计数不准。'},
+{q:'=COUNTIF(A:A,"*888*") 这个公式在统计什么?',opts:['A列中等于"888"的单元格数','A列中数值大于888的单元格数','A列中包含"888"的单元格数(*是通配符)','A列中第888行的值'],ans:2,why:'COUNTIF支持通配符:*表示任意字符,?表示单个字符。COUNTIF(A:A,"888")=精确等于888;COUNTIF(A:A,"*888*")=包含888。'},
+{q:'你要统计"价格>100的5位靓号数量",COUNTIF能直接做到吗?',opts:['能,=COUNTIF(价格列,">100",位数列,"5位")','不能,需要COUNTIFS(多条件计数)','能,COUNTIF天然支持多条件','需要用SUMIF代替'],ans:1,why:'COUNTIF只能单条件。多条件计数用COUNTIFS:=COUNTIFS(价格列,">100",位数列,5)。SUMIF/SUMIFS同理。'}
+]},
+10:{passing:70,questions:[
+{q:'VLOOKUP的第四个参数FALSE代表什么?',opts:['不区分大小写','精确匹配(找不到就报#N/A)','近似匹配','不返回结果'],ans:1,why:'FALSE=精确匹配,查找值必须完全相等才算找到。TRUE=近似匹配,会找"最接近且不超过"的值,要求查找列必须升序排列。工作中90%的场景用FALSE。'},
+{q:'VLOOKUP最大的限制是什么?',opts:['不能跨表查找','只能从左往右查(查找列必须在返回列的左边)','只能查数字','最多只能查100行'],ans:1,why:'VLOOKUP只能向右查:查找列必须在最左边,返回列在它右边。如果要向左查,可以用INDEX+MATCH或XLOOKUP。'},
+{q:'=VLOOKUP(A1,用户表!A:D,3,FALSE) 中,数字3是什么意思?',opts:['查3次','返回用户表A:D区域中从左数第3列的值','只查前3行','匹配度≥3就可以'],ans:1,why:'第三个参数col_index_num=从查找区域第一列开始数,要返回第几列的值。A列=1,B列=2,C列=3,D列=4。数错了就返回错误列的数据。'}
+]},
+11:{passing:70,questions:[
+{q:'=IF(A1>180,"高价",IF(A1>50,"中价","低价")) 这个嵌套IF表示什么逻辑?',opts:['A1>180→高价,50<A1≤180→中价,A1≤50→低价','A1>50→中价,A1>180→高价,否则低价','所有>50的都是中价','IF不能嵌套'],ans:0,why:'IF从外到内执行:先判断>180→是=高价,不是→继续判断>50→是=中价,不是=低价。等价于Excel 2016+的IFS(A1>180,"高价",A1>50,"中价",TRUE,"低价")。'},
+{q:'你想从靓号"48360054"里提取前4位,用什么函数?',opts:['=RIGHT(A1,4)','=MID(A1,1,4)','=LEFT(A1,4)','B和C都可以'],ans:3,why:'LEFT(text,4)=从左取4位;MID(text,1,4)=从第1位开始取4位。结果相同,但习惯上取左边用LEFT更直观。RIGHT=从右边取。'},
+{q:'=TEXT(A1,"yyyy年mm月dd日") 中yyyy是什么?',opts:['一个拼写错误','占位符,代表"四位年份"','一个叫yyyy的函数','Excel的密码'],ans:1,why:'TEXT函数用占位符定义输出格式:yyyy=四位年份,mm=两位月份,dd=两位日期,hh=小时,ss=秒。#,##0=加千分位分隔符。掌握TEXT是数据格式化的基本功。'}
+]},
+12:{passing:70,questions:[
+{q:'下面哪个场景最适合用折线图?',opts:['对比5种活动类型的参与人数','展示一年12个月的销量趋势','看各规律类型靓号的占比','对比各部门人数'],ans:1,why:'折线图=看趋势(时间变化);柱状图=比大小(分类对比);饼图=看占比(但分类多了就不好用)。选错图表会让读者误解数据。'},
+{q:'柱状图和饼图都可以看"占比",但饼图有一个公认的限制是什么?',opts:['饼图不能显示百分比','分类超过5个时饼图很难分辨','饼图只能显示整数','饼图只能用Excel做'],ans:1,why:'分类太多=饼图碎片化,读者分不清谁大谁小。一般规则:分类≤5个用饼图,>5个改用柱状图。这是数据分析的基本审美。'}
+]},
+19:{passing:70,questions:[
+{q:'SELECT population FROM world WHERE name="China" 这条SQL在做什么?',opts:['插入一条中国的人口数据','查询world表中中国的population值','删除world表中的中国行','创建一个新表叫China'],ans:1,why:'SELECT=要什么列,FROM=从哪个表取,WHERE=满足什么条件。这是SQL最基础的查询结构。'},
+{q:'在SQL里,* 代表什么?',opts:['匹配任意字符','所有列','注释','乘法'],ans:1,why:'SELECT *=选取表中所有列。但实际工作中不建议滥用SELECT *,因为它可能拉出大量不必要的数据,且当表结构变化时可能出错。'},
+{q:'SQL里的关键字(如SELECT、FROM)大小写有区别吗?',opts:['有,必须大写','有,必须小写','没有区别,但约定俗成关键字用大写','看数据库类型'],ans:2,why:'SQL不区分大小写,SELECT和select一样。但团队规范通常约定:关键字大写(SELECT/FROM/WHERE),表名列名小写。这样代码可读性更好。'}
+]},
+20:{passing:70,questions:[
+{q:'SELECT * FROM users WHERE age > 18 AND city="Beijing" 中AND的作用是?',opts:['两个条件任意满足一个就行','两个条件必须同时满足','把city改成Beijing','连接两张表'],ans:1,why:'AND=两个条件同时为真才返回该行。OR=任意一个条件为真就返回。多个AND/OR混用时建议加括号明确优先级。'},
+{q:'WHERE name LIKE "A%" 匹配什么?',opts:['name等于"A%"(含百分号)','name以A开头,后面跟任意字符','name包含字母A','name以A结尾'],ans:1,why:'LIKE配合通配符:%匹配任意多个字符(含0个),_匹配恰好一个字符。A%=以A开头;%A=以A结尾;%A%=包含A;A_=A后面跟一个字符。'},
+{q:'WHERE id IN (1,2,3) 等价于?',opts:['WHERE id=1 AND id=2 AND id=3','WHERE id=1 OR id=2 OR id=3','WHERE id BETWEEN 1 AND 3','WHERE id > 0'],ans:1,why:'IN就是OR的简写:IN (1,2,3)=id=1 OR id=2 OR id=3。BETWEEN则是AND:WHERE price BETWEEN 50 AND 180 = price>=50 AND price<=180。'}
+]},
+21:{passing:70,questions:[
+{q:'ORDER BY price DESC 中DESC是什么意思?',opts:['描述(Description)','降序(Descending),从大到小','降级(Degrade)','递减(Decrease)'],ans:1,why:'DESC=降序(大到小/新到旧/Z到A)。ASC=升序(小到大/旧到新/A到Z),是默认值可以省略。'},
+{q:'LIMIT 10 放在SQL语句最后的作用是什么?',opts:['限制数据库最多存10行','只返回前10行结果','查询速度提升10倍','每页显示10行'],ans:1,why:'LIMIT N=只看前N条。常用于:看数据样例(LIMIT 10)、找最大值(ORDER BY col DESC LIMIT 1)、做分页(LIMIT 20 OFFSET 40=跳过40条取20条)。'},
+{q:'DISTINCT用在SELECT后面是什么作用?',opts:['让查询更快','去重,返回不重复的值','把列名变短','声明这是一次不同的查询'],ans:1,why:'SELECT DISTINCT col FROM table=返回col列中所有不重复的值。COUNT(DISTINCT col)=统计不重复值的数量。数据去重是分析的基本功。'}
+]},
+22:{passing:70,questions:[
+{q:'SELECT COUNT(*) FROM world WHERE continent="Europe" 返回什么?',opts:['欧洲所有国家的列表','欧洲的人口总和','欧洲的国家数量','欧洲的面积总和'],ans:2,why:'COUNT(*)=数有多少行。加WHERE continent="Europe"=只数欧洲的行→欧洲的国家数。注意:COUNT(列名)不统计NULL,COUNT(*)统计所有行。'},
+{q:'SELECT continent, COUNT(*), SUM(population) FROM world GROUP BY continent,这条SQL会返回什么?',opts:['每个大洲的国家总数和总人口','全球的总人口','每个国家的信息','会报错(缺少条件)'],ans:0,why:'GROUP BY continent=按大洲分组,每个大洲一行。COUNT(*)=该大洲有多少国家,SUM(population)=该大洲总人口。聚合函数在GROUP BY内部执行。'},
+{q:'AVG(列名)计算时,会自动忽略什么?',opts:['0值','NULL值','负数','最大值和最小值'],ans:1,why:'所有聚合函数(COUNT/SUM/AVG/MAX/MIN)都自动忽略NULL。AVG是SUM/NON-NULL-COUNT。如果NULL代表"未知",那AVG的结果是"已知数据的平均"。'}
+]},
+23:{passing:70,questions:[
+{q:'WHERE和HAVING的区别是什么?',opts:['没有区别,写法不同','WHERE在分组前筛选,HAVING在分组后筛选','WHERE用于SELECT,HAVING用于INSERT','WHERE只能筛数字,HAVING可以筛文本'],ans:1,why:'执行顺序:FROM→WHERE→GROUP BY→HAVING→SELECT→ORDER BY→LIMIT。WHERE筛原始行,HAVING筛分组后的结果。=HAVING COUNT(*)>10→只要那些国家数>10的大洲。'},
+{q:'以下哪句会报错?',opts:['SELECT name, AVG(pop) FROM t GROUP BY city','SELECT city, COUNT(*) FROM t GROUP BY city','SELECT city, COUNT(*) FROM t','SELECT city, COUNT(*) as n FROM t GROUP BY city'],ans:2,why:'有GROUP BY时,SELECT中的非聚合列必须出现在GROUP BY中。C没有GROUP BY但用了COUNT(*)(聚合函数),COUNT返回一行,但city可能有多行→矛盾。要么加GROUP BY city,要么去掉city。'}
+]},
+26:{passing:70,questions:[
+{q:'LEFT JOIN和INNER JOIN的主要区别是什么?',opts:['没有区别','LEFT JOIN保留左表所有行(右表匹配不上就填NULL),INNER JOIN只保留两表都匹配上的行','LEFT JOIN比INNER JOIN快','LEFT JOIN只能连两张表'],ans:1,why:'工作中LEFT JOIN最常用:你想保留主表的所有行,右表的信息有就填上,没有就空着(比如用户表LEFT JOIN购买表→每个用户都有,没买过的人购买金额=空)。INNER JOIN则会直接丢弃没买过的人。'},
+{q:'ON tableA.user_id = tableB.user_id 中的ON是在做什么?',opts:['打开数据库连接','指定两张表按哪个列匹配(关联键)','打开一张表','没什么作用'],ans:1,why:'ON后面写关联条件,告诉数据库"用这一列来配对"。两张表的关联列名可以不同(ON a.uid=b.user_id),只要它们的值能对上。'}
+]},
+27:{passing:70,questions:[
+{q:'有三张表A、B、C,你要把它们连在一起。以下哪种写法是正确的?',opts:['SELECT * FROM A JOIN B JOIN C','SELECT * FROM A JOIN B ON ... JOIN C ON ...','SELECT * FROM A JOIN B AND C','JOIN不支持三表连接'],ans:1,why:'多表JOIN就是串联:FROM A JOIN B ON A.id=B.id JOIN C ON B.id=C.id。每JOIN一张表就跟一个ON条件。也可以给表取别名简化:FROM users u JOIN orders o ON u.id=o.user_id。'},
+{q:'一张员工表里有"员工ID"和"上级ID"两列。要查出"每个员工+他的上级名字",需要用什么?',opts:['子查询','自连接(表跟自己做JOIN)','UNION','UNION'],ans:1,why:'自连接(Self Join)=同一张表用不同别名连两次:SELECT e.name AS 员工,m.name AS 上级 FROM emp e LEFT JOIN emp m ON e.manager_id=m.id。这是面试高频考点。'}
+]},
+29:{passing:70,questions:[
+{q:'子查询通常出现在SQL的哪个位置?',opts:['只能放在WHERE后面','可以放在SELECT/FROM/WHERE中','只能放在FROM后面','只能放在SELECT后面'],ans:1,why:'子查询可以出现在:WHERE col IN (SELECT...),FROM (SELECT...) AS tmp,SELECT (SELECT...) AS col。WHERE子查询最常见,FROM子查询常用于先聚合再筛选。'},
+{q:'SELECT name FROM world WHERE population > (SELECT population FROM world WHERE name="Russia") 这条SQL在查什么?',opts:['俄罗斯的人口','人口比俄罗斯多的国家','人口比俄罗斯少的国家','查询会报错'],ans:1,why:'子查询先执行(查俄罗斯人口)→返回一个值→外层查询用这个值做条件(找大于该值的国家)。括号内的子查询独立运行,结果交给外层。'}
+]},
+30:{passing:70,questions:[
+{q:'ROW_NUMBER() OVER (PARTITION BY type ORDER BY price DESC) 这条窗口函数在做什么?',opts:['删除重复行','按type分组,组内按price从高到低编号','算每个type的price总和','筛选价格最高的行'],ans:1,why:'PARTITION BY=分组(类似GROUP BY但不合并行),ORDER BY=组内排序,ROW_NUMBER()=从1开始编号。结果是每个类型内部价格从高到低排1/2/3...常用于"每组取前N条"。'},
+{q:'窗口函数和GROUP BY最大的区别是什么?',opts:['没有区别','GROUP BY会合并行为一行,窗口函数保留所有原始行','窗口函数更慢','窗口函数只能用在MySQL中'],ans:1,why:'GROUP BY汇总后行数减少(每组一行);窗口函数在每行旁边加一列计算结果,原始行数不变。分析时经常先GROUP BY汇总,再窗口函数排名。'}
+]},
+31:{passing:70,questions:[
+{q:'LAG(列名,1) OVER (ORDER BY 日期) 返回什么?',opts:['当前行的值','前一行的值','后一行的值','第一行的值'],ans:1,why:'LAG=往前看(Lag=落后),LEAD=往后看(Lead=领先)。LAG(sales,1)="昨天(上一行)的销售额"。常用于算环比增长=今天-昨天/昨天。没有上一行时返回NULL。'}
+]}
+};
+
 // ==================== 状态管理 ====================
 const STORAGE_KEY = 'data_learning_tracker_state';
 
@@ -732,8 +861,6 @@ function checkout(){
   if(timerEl && timerEl._interval){
     clearInterval(timerEl._interval);
     timerEl.style.display = 'none';
-    const studyMin = Math.floor((timerEl.textContent.match(/(\d+):(\d+)/)||['','0','0']).slice(1).reduce((a,b)=>parseInt(a)*60+parseInt(b),0)/60);
-    state.totalStudyMinutes = (state.totalStudyMinutes||0) + studyMin;
   }
 
   // 弹窗
@@ -743,49 +870,176 @@ function checkout(){
   modal.style.display = 'flex';
 
   document.getElementById('btnDone').onclick = ()=>{
-    // 学完了
-    state.completedDays[state.currentDay] = true;
-    state.todayCheckedIn = false;
-    state.todayTaskStatus = {};
-    state.rolloverTasks = []; // 清空rollover
-
-    // RLOVER tasks: clear all rollover items
-    // 保存完成状态
-    saveState(state);
-
-    // 推进到下一天
-    if(state.currentDay < 60){
-      state.currentDay++;
-    }
-    saveState(state);
     modal.style.display = 'none';
-    renderAll();
+    // 检查今天有没有测验
+    const quiz = QUIZZES[state.currentDay];
+    if(quiz){
+      openQuiz(quiz);
+    }else{
+      // 无测验,直接通过
+      completeDay();
+    }
   };
 
   document.getElementById('btnNotDone').onclick = ()=>{
-    // 没学完——未完成的任务滚到明天
-    const undone = [];
-    d.tasks.forEach((t,i)=>{
-      const key = `${state.currentDay}-${i}`;
-      if(state.todayTaskStatus[key]!=='done'){
-        undone.push({...t, fromDay:state.currentDay});
-      }
-    });
+    rolloverUndone(d);
+    modal.style.display = 'none';
+  };
+}
 
-    // 标记当天为非完成(即使部分完成也不标记)
-    // 未完成任务加到rollover
-    state.rolloverTasks = [...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay), ...undone];
+// ==================== 测验系统 ====================
+function openQuiz(quiz){
+  const modal = document.getElementById('quizModal');
+  const qDiv = document.getElementById('quizQuestions');
+  const resultDiv = document.getElementById('quizResult');
+  const submitBtn = document.getElementById('btnQuizSubmit');
+  const titleEl = document.getElementById('quizTitle');
+  const subEl = document.getElementById('quizSub');
+
+  resultDiv.style.display = 'none';
+  submitBtn.disabled = true;
+  const passingPercent = quiz.passing || 70;
+  const passingCount = Math.ceil(quiz.questions.length * passingPercent / 100);
+
+  titleEl.textContent = `📝 Day ${state.currentDay} 今日测验`;
+  subEl.textContent = `共 ${quiz.questions.length} 题，答对 ${passingCount} 题(≥${passingPercent}%)即可通关`;
+
+  let html = '';
+  quiz.questions.forEach((q,qi)=>{
+    html += `<div class="quiz-question">
+      <div class="quiz-q-text">${qi+1}. ${q.q}</div>`;
+    q.opts.forEach((opt,oi)=>{
+      html += `<button class="quiz-option" data-q="${qi}" data-o="${oi}" onclick="selectOption(this,${qi},${oi})">${String.fromCharCode(65+oi)}. ${opt}</button>`;
+    });
+    html += `</div>`;
+  });
+  qDiv.innerHTML = html;
+
+  // 存储当前测验引用
+  window._currentQuiz = {quiz, answers:{}, answered:0, total:quiz.questions.length, passing:passingPercent};
+
+  // 跳过按钮
+  document.getElementById('btnQuizSkip').onclick = ()=>{
+    modal.style.display = 'none';
+    rolloverUndone(getDayData(state.currentDay));
+  };
+
+  // 提交按钮
+  submitBtn.onclick = ()=>gradeQuiz();
+  submitBtn.textContent = '提交答案';
+  submitBtn.className = 'btn btn-primary';
+
+  modal.style.display = 'flex';
+}
+
+function selectOption(btn, qi, oi){
+  const quizData = window._currentQuiz;
+  if(!quizData || quizData.submitted) return;
+  // 取消同题其他选项
+  const qDiv = btn.parentElement;
+  qDiv.querySelectorAll('.quiz-option').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  quizData.answers[qi] = oi;
+  // 统计已答题数
+  quizData.answered = Object.keys(quizData.answers).length;
+  // 全部答完才允许提交
+  document.getElementById('btnQuizSubmit').disabled = quizData.answered < quizData.total;
+}
+
+function gradeQuiz(){
+  const quizData = window._currentQuiz;
+  if(!quizData) return;
+  quizData.submitted = true;
+
+  const {quiz, answers} = quizData;
+  let correctCount = 0;
+
+  // 标记每道题
+  quiz.questions.forEach((q,qi)=>{
+    const userAns = answers[qi];
+    const correctIdx = q.ans;
+    const qDiv = document.getElementById('quizQuestions').querySelectorAll('.quiz-question')[qi];
+    if(!qDiv) return;
+    const opts = qDiv.querySelectorAll('.quiz-option');
+    opts.forEach((b,oi)=>{
+      b.style.pointerEvents = 'none';
+      if(oi===correctIdx) b.classList.add('correct');
+      if(oi===userAns && oi!==correctIdx) b.classList.add('wrong');
+    });
+    if(userAns===correctIdx) correctCount++;
+  });
+
+  const passingCount = Math.ceil(quiz.questions.length * quizData.passing / 100);
+  const passed = correctCount >= passingCount;
+  const resultDiv = document.getElementById('quizResult');
+  resultDiv.style.display = 'block';
+
+  let resultHtml = `<div class="quiz-score">${passed?'✅':'❌'} ${correctCount}/${quizData.total}</div>`;
+  resultHtml += `<div class="quiz-result ${passed?'pass':'fail'}">${passed?'🎉 及格！':'📚 不及格——需要复习后重试'}</div>`;
+
+  // 每题解析
+  quiz.questions.forEach((q,qi)=>{
+    const userAns = answers[qi];
+    const icon = userAns===q.ans?'✅':'❌';
+    resultHtml += `<div class="quiz-explain">${icon} <strong>第${qi+1}题:</strong> ${q.why}</div>`;
+  });
+
+  resultDiv.innerHTML = resultHtml;
+
+  // 更新按钮
+  const submitBtn = document.getElementById('btnQuizSubmit');
+  submitBtn.style.display = 'none';
+  document.getElementById('btnQuizSkip').style.display = 'none';
+
+  const btnsDiv = document.getElementById('quizBtns');
+  if(passed){
+    btnsDiv.innerHTML = `<button class="btn btn-primary" onclick="completeDay();document.getElementById('quizModal').style.display='none'">继续下一天 →</button>`;
+  }else{
+    btnsDiv.innerHTML = `<button class="btn btn-outline" onclick="retryQuiz()">重新学习,稍后再测</button>`;
+  }
+}
+
+function retryQuiz(){
+  document.getElementById('quizModal').style.display = 'none';
+  rolloverUndone(getDayData(state.currentDay));
+}
+
+function completeDay(){
+  state.completedDays[state.currentDay] = true;
+  state.todayCheckedIn = false;
+  state.todayTaskStatus = {};
+  state.rolloverTasks = [];
+  if(state.currentDay < 60){
+    state.currentDay++;
+  }
+  saveState(state);
+  renderAll();
+}
+
+function rolloverUndone(d){
+  if(!d){
+    // 如果没数据,只重置状态
     state.todayCheckedIn = false;
     state.todayTaskStatus = {};
-    state.streak = Math.max(0,(state.streak||1)-1);
-
-    if(state.currentDay < 60){
-      state.currentDay++;
-    }
+    if(state.currentDay < 60) state.currentDay++;
     saveState(state);
-    modal.style.display = 'none';
     renderAll();
-  };
+    return;
+  }
+  const undone = [];
+  d.tasks.forEach((t,i)=>{
+    const key = `${state.currentDay}-${i}`;
+    if(state.todayTaskStatus[key]!=='done'){
+      undone.push({...t, fromDay:state.currentDay});
+    }
+  });
+  state.rolloverTasks = [...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay), ...undone];
+  state.todayCheckedIn = false;
+  state.todayTaskStatus = {};
+  state.streak = Math.max(0,(state.streak||1)-1);
+  if(state.currentDay < 60) state.currentDay++;
+  saveState(state);
+  renderAll();
 }
 
 function skipDay(){
@@ -806,6 +1060,12 @@ document.getElementById('checkoutModal').addEventListener('click', function(e){
   if(e.target === this){
     this.style.display = 'none';
   }
+});
+document.getElementById('quizModal').addEventListener('click', function(e){
+  if(e.target === this){
+    // 点击背景不关闭测验(防止误操作)
+  }
+});
 });
 
 // ==================== 初始化 ====================
