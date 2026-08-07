@@ -865,11 +865,8 @@ function checkNewDay(){
       if(undoneTasks.length>0){
         state.rolloverTasks = [...undoneTasks, ...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay)];
       }
-      // 如果昨天完成了所有任务,推进到下一天
-      const allDone = prevDayData ? prevDayData.tasks.every((t,i)=>{
-        return state.todayTaskStatus[`${state.currentDay}-${i}`]==='done';
-      }) : true;
-      if(allDone && state.currentDay < 60){
+      // 任务已rollover,推进到下一天(避免"昨天未完成"和"今日任务"显示同一批内容)
+      if(state.currentDay < 60){
         state.currentDay++;
       }
       state.todayCheckedIn = false;
@@ -1466,7 +1463,8 @@ function completeDay(){
   state.completedDays[state.currentDay] = true;
   state.todayCheckedIn = false;
   state.todayTaskStatus = {};
-  state.rolloverTasks = [];
+  // 只清除当前天的rollover,保留其他天积累的
+  state.rolloverTasks = state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay);
   // 统计今日完成天数
   const now = todayStr();
   if(state._completionsDate !== now){state._completionsDate=now;state._completionsToday=0;}
