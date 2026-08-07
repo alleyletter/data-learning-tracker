@@ -976,7 +976,19 @@ function renderDailyContent(){
         html += renderTaskItem(t, key, false);
       });
       html += `</ul>`;
-    } else if(state.rolloverTasks.length===0){
+    } else if(state.rolloverTasks.length > 0){
+      // 今日任务全在滚存里 → currentDay卡住了,自动修复并渲染新一天
+      if(state.currentDay < 60) state.currentDay++;
+      saveState(state);
+      const newD = getDayData(state.currentDay);
+      if(newD && !weekend){
+        html += `<div class="section-label">📋 今日任务</div><ul class="task-list">`;
+        newD.tasks.forEach((t,i)=>{
+          html += renderTaskItem(t, `${state.currentDay}-${i}`, false);
+        });
+        html += `</ul>`;
+      }
+    } else {
       html += `<div class="empty-state">
         <div class="icon">✅</div>
         <p>今日任务已全部完成！</p>
