@@ -871,6 +871,11 @@ function checkNewDay(){
       }
       state.todayCheckedIn = false;
       state.todayTaskStatus = {};
+    } else {
+      // 昨天点了"今天就到这",今天自动推进
+      if(state.currentDay < 60) state.currentDay++;
+      state.todayCheckedIn = false;
+      state.todayTaskStatus = {};
     }
   }
   state.lastActiveDate = now;
