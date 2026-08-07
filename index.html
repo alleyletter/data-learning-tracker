@@ -911,6 +911,13 @@ function renderDashboard(){
 
 function renderDailyContent(){
   const container = document.getElementById('dailyContent');
+
+  // 清理脏数据：滚存任务里来自当前天的不是"昨天的"，直接移除
+  if(state.rolloverTasks.some(r=>r.fromDay===state.currentDay)){
+    state.rolloverTasks = state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay);
+    saveState(state);
+  }
+
   const d = getDayData(state.currentDay);
   const phase = d ? d.phase : 1;
   const weekend = isWeekend();
@@ -965,10 +972,12 @@ function renderDailyContent(){
     html += `</ul>`;
   }
 
-  // 当日任务（排除已在滚存列表中的，避免重复显示）
+  // 当日任务（排除来自其他天的滚存任务,避免同任务在上下两个区域都出现）
   if(!weekend && d){
-    const rolloverTexts = new Set(state.rolloverTasks.map(r=>r.text));
-    const freshTasks = d.tasks.filter(t=>!rolloverTexts.has(t.text));
+    const rolloverTextsFromOtherDays = new Set(
+      state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay).map(r=>r.text)
+    );
+    const freshTasks = d.tasks.filter(t=>!rolloverTextsFromOtherDays.has(t.text));
     if(freshTasks.length > 0){
       html += `<div class="section-label">📋 今日任务</div><ul class="task-list">`;
       freshTasks.forEach((t,i)=>{
@@ -976,18 +985,6 @@ function renderDailyContent(){
         html += renderTaskItem(t, key, false);
       });
       html += `</ul>`;
-    } else if(state.rolloverTasks.length > 0){
-      // 今日任务全在滚存里 → currentDay卡住了,自动修复并渲染新一天
-      if(state.currentDay < 60) state.currentDay++;
-      saveState(state);
-      const newD = getDayData(state.currentDay);
-      if(newD && !weekend){
-        html += `<div class="section-label">📋 今日任务</div><ul class="task-list">`;
-        newD.tasks.forEach((t,i)=>{
-          html += renderTaskItem(t, `${state.currentDay}-${i}`, false);
-        });
-        html += `</ul>`;
-      }
     } else {
       html += `<div class="empty-state">
         <div class="icon">✅</div>
