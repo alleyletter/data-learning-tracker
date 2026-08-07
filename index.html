@@ -718,6 +718,7 @@ function defaultState(){
     completedDays:{},       // {dayNum:true}
     rolloverTasks:[],       // [{dayNum,text,res,resUrl,time}]
     todayCheckedIn:false,
+    todayCompleted:false,  // 点了"今天就到这"后为true
     todayTaskStatus:{},     // {"dayNum-taskIdx":"done"|"undone"}
     streak:0,
     lastActiveDate:null,    // 'YYYY-MM-DD'
@@ -870,11 +871,13 @@ function checkNewDay(){
         state.currentDay++;
       }
       state.todayCheckedIn = false;
+      state.todayCompleted = false;
       state.todayTaskStatus = {};
     } else {
       // 昨天点了"今天就到这",今天自动推进
       if(state.currentDay < 60) state.currentDay++;
       state.todayCheckedIn = false;
+      state.todayCompleted = false;
       state.todayTaskStatus = {};
     }
   }
@@ -1018,6 +1021,9 @@ function renderDailyContent(){
   html += `<div class="actions-row">`;
   if(!state.todayCheckedIn){
     html += `<button class="btn btn-primary btn-block" id="btnCheckin" onclick="checkin()">📖 开始学习</button>`;
+  }else if(state.todayCompleted){
+    // 今天就到这之后:显示回顾模式+提前进入下一天
+    html += `<button class="btn btn-outline btn-block" onclick="completeDay()">⏭️ 提前进入下一天</button>`;
   }else{
     html += `<button class="btn btn-outline btn-block" id="btnCheckout" onclick="checkout()">✅ 结束学习</button>`;
   }
@@ -1156,6 +1162,7 @@ function enterReviewMode(dayNum){
   reviewMode = dayNum;
   // 重置签到状态以防干扰
   state.todayCheckedIn = false;
+  state.todayCompleted = false;
   state.todayTaskStatus = {};
   renderAllReview();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1516,6 +1523,7 @@ function stayToday(){
   // 标记今天已完成，但不推进天数——明天还能回来看今天的内容
   state.completedDays[state.currentDay] = true;
   state.todayCheckedIn = true;
+  state.todayCompleted = true;
   state.todayTaskStatus = {};
   state.rolloverTasks = state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay);
   saveState(state);
@@ -1525,6 +1533,7 @@ function stayToday(){
 function completeDay(){
   state.completedDays[state.currentDay] = true;
   state.todayCheckedIn = false;
+  state.todayCompleted = false;
   state.todayTaskStatus = {};
   // 只清除当前天的rollover,保留其他天积累的
   state.rolloverTasks = state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay);
@@ -1557,6 +1566,7 @@ function rolloverUndone(d){
   if(!d){
     // 如果没数据,只重置状态
     state.todayCheckedIn = false;
+    state.todayCompleted = false;
     state.todayTaskStatus = {};
     if(state.currentDay < 60) state.currentDay++;
     saveState(state);
@@ -1572,6 +1582,7 @@ function rolloverUndone(d){
   });
   state.rolloverTasks = [...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay), ...undone];
   state.todayCheckedIn = false;
+  state.todayCompleted = false;
   state.todayTaskStatus = {};
   state.streak = Math.max(0,(state.streak||1)-1);
   if(state.currentDay < 60) state.currentDay++;
@@ -1583,6 +1594,7 @@ function skipDay(){
   // 跳过周末/弹性日
   state.completedDays[state.currentDay] = true;
   state.todayCheckedIn = false;
+  state.todayCompleted = false;
   state.todayTaskStatus = {};
   state.rolloverTasks = [];
   if(state.currentDay < 60){
