@@ -965,14 +965,23 @@ function renderDailyContent(){
     html += `</ul>`;
   }
 
-  // 当日任务
+  // 当日任务（排除已在滚存列表中的，避免重复显示）
   if(!weekend && d){
-    html += `<div class="section-label">📋 今日任务</div><ul class="task-list">`;
-    d.tasks.forEach((t,i)=>{
-      const key = `${state.currentDay}-${i}`;
-      html += renderTaskItem(t, key, false);
-    });
-    html += `</ul>`;
+    const rolloverTexts = new Set(state.rolloverTasks.map(r=>r.text));
+    const freshTasks = d.tasks.filter(t=>!rolloverTexts.has(t.text));
+    if(freshTasks.length > 0){
+      html += `<div class="section-label">📋 今日任务</div><ul class="task-list">`;
+      freshTasks.forEach((t,i)=>{
+        const key = `${state.currentDay}-${i}`;
+        html += renderTaskItem(t, key, false);
+      });
+      html += `</ul>`;
+    } else if(state.rolloverTasks.length===0){
+      html += `<div class="empty-state">
+        <div class="icon">✅</div>
+        <p>今日任务已全部完成！</p>
+      </div>`;
+    }
   }else if(weekend && state.rolloverTasks.length===0){
     html += `<div class="empty-state">
       <div class="icon">🎉</div>
