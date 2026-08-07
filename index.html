@@ -1343,8 +1343,8 @@ function checkout(){
     if(quiz){
       openQuiz(quiz);
     }else{
-      // 无测验,直接通过
-      completeDay();
+      // 无测验,弹出选择:继续下一天还是今天就到这
+      showDayEndChoice();
     }
   };
 
@@ -1464,7 +1464,9 @@ function gradeQuiz(){
 
   const btnsDiv = document.getElementById('quizBtns');
   if(passed){
-    btnsDiv.innerHTML = `<button class="btn btn-primary" onclick="fireConfetti();setTimeout(()=>{completeDay();document.getElementById('quizModal').style.display='none'},200)">继续下一天 →</button>`;
+    btnsDiv.innerHTML = `
+      <button class="btn btn-outline" onclick="stayToday();document.getElementById('quizModal').style.display='none'">📌 今天就到这</button>
+      <button class="btn btn-primary" onclick="fireConfetti();setTimeout(()=>{completeDay();document.getElementById('quizModal').style.display='none'},200)">继续下一天 →</button>`;
   }else{
     btnsDiv.innerHTML = `<button class="btn btn-outline" onclick="retryQuiz()">重新学习,稍后再测</button>`;
   }
@@ -1475,6 +1477,44 @@ function retryQuiz(){
   const d = getDayData(state.currentDay);
   const undoneCount = d ? d.tasks.length : 0;
   showRolloverConfirm(undoneCount, d);
+}
+
+function showDayEndChoice(){
+  // 无测验日学完后,让用户选择推进还是停下复习
+  const msg = document.getElementById('modalMsg');
+  msg.innerHTML = '✅ 今日学习完成！<br><span style="color:var(--sub);font-size:.82rem">要继续下一天,还是今天就到这?</span>';
+  const btns = document.querySelector('#checkoutModal .modal-btns');
+  btns.innerHTML = `
+    <button class="btn btn-outline" id="btnStay">📌 今天就到这</button>
+    <button class="btn btn-primary" id="btnNext">继续下一天 →</button>
+  `;
+  document.getElementById('btnStay').onclick = ()=>{
+    document.getElementById('checkoutModal').style.display = 'none';
+    btns.innerHTML = `
+      <button class="btn btn-outline" id="btnNotDone">没学完</button>
+      <button class="btn btn-primary" id="btnDone">学完了！</button>
+    `;
+    stayToday();
+  };
+  document.getElementById('btnNext').onclick = ()=>{
+    document.getElementById('checkoutModal').style.display = 'none';
+    btns.innerHTML = `
+      <button class="btn btn-outline" id="btnNotDone">没学完</button>
+      <button class="btn btn-primary" id="btnDone">学完了！</button>
+    `;
+    completeDay();
+  };
+  document.getElementById('checkoutModal').style.display = 'flex';
+}
+
+function stayToday(){
+  // 标记今天已完成，但不推进天数——明天还能回来看今天的内容
+  state.completedDays[state.currentDay] = true;
+  state.todayCheckedIn = true;
+  state.todayTaskStatus = {};
+  state.rolloverTasks = state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay);
+  saveState(state);
+  renderAll();
 }
 
 function completeDay(){
