@@ -755,6 +755,18 @@ function loadState(){
       for(const k of Object.keys(def)){
         if(!(k in s)) s[k]=def[k];
       }
+      // 自动修复：滚存来源天的任务已全部补完但未被标记完成
+      if(s.rolloverSources){
+        Object.keys(s.rolloverSources).forEach(fromDay => {
+          const src = s.rolloverSources[fromDay];
+          // 该天没有任何滚存任务残留 = 所有任务已补完
+          const remaining = (s.rolloverTasks||[]).filter(r => r.fromDay == fromDay).length;
+          if(remaining === 0 && !s.completedDays[fromDay]){
+            s.completedDays[fromDay] = true;
+            delete s.rolloverSources[fromDay];
+          }
+        });
+      }
       return s;
     }
   }catch(e){}
