@@ -734,7 +734,8 @@ function defaultState(){
   return {
     currentDay:1,           // 当前学习日 1-60
     completedDays:{},       // {dayNum:true}
-    rolloverTasks:[],       // [{dayNum,text,res,resUrl,time}]
+    rolloverTasks:[],       // [{text,res,resUrl,time,fromDay}]
+    rolloverSources:{},     // {fromDay: {done:N, total:M}} — 记录滚存来源天已完成了几个任务
     todayCheckedIn:false,
     todayCompleted:false,  // 点了"今天就到这"后为true
     todayTaskStatus:{},     // {"dayNum-taskIdx":"done"|"undone"}
@@ -1342,6 +1343,8 @@ function toggleTask(key){
     state.todayTaskStatus[key] = 'done';
   }
   saveState(state);
+  // 如果是滚存任务，检查来源天是否已全部完成
+  if(key.startsWith('rollover-')) checkRolloverCompletions();
   // 弹跳动画
   const cb = document.getElementById('cb-'+key);
   if(cb){cb.classList.add('bouncing');setTimeout(()=>cb.classList.remove('bouncing'),500);}
@@ -1574,6 +1577,8 @@ function showDayEndChoice(){
 
 function stayToday(){
   // 标记今天已完成，但不推进天数——明天还能回来看今天的内容
+  // 先检查滚存任务是否补完了来源天（必须在清空todayTaskStatus之前）
+  checkRolloverCompletions();
   state.completedDays[state.currentDay] = true;
   state.todayCheckedIn = true;
   state.todayCompleted = true;
@@ -1584,6 +1589,8 @@ function stayToday(){
 }
 
 function completeDay(){
+  // 先检查滚存任务是否补完了来源天（必须在清空todayTaskStatus之前）
+  checkRolloverCompletions();
   state.completedDays[state.currentDay] = true;
   state.todayCheckedIn = false;
   state.todayCompleted = false;
@@ -1633,6 +1640,9 @@ function rolloverUndone(d){
       undone.push({...t, fromDay:state.currentDay});
     }
   });
+  // 记录来源天的完成进度：已经做了几个/总共几个
+  const doneCount = d.tasks.length - undone.length;
+  state.rolloverSources[state.currentDay] = {done: doneCount, total: d.tasks.length};
   state.rolloverTasks = [...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay), ...undone];
   state.todayCheckedIn = false;
   state.todayCompleted = false;
@@ -1641,6 +1651,33 @@ function rolloverUndone(d){
   if(state.currentDay < 60) state.currentDay++;
   saveState(state);
   renderAll();
+}
+
+// 检查滚存任务是否全部完成，如果是则标记来源天为已完成
+function checkRolloverCompletions(){
+  if(!state.rolloverSources) return;
+  const daysToClear = [];
+  Object.keys(state.rolloverSources).forEach(fromDay => {
+    const src = state.rolloverSources[fromDay];
+    // 统计该来源天在滚存任务中已完成的数量
+    let rolloverDone = 0;
+    state.rolloverTasks.forEach((r, i) => {
+      if(r.fromDay == fromDay && state.todayTaskStatus[`rollover-${i}`]==='done'){
+        rolloverDone++;
+      }
+    });
+    // 已完成的(在原天做的) + 滚存补做的 >= 总数 → 标记该天完成
+    if(src.done + rolloverDone >= src.total){
+      state.completedDays[fromDay] = true;
+      daysToClear.push(fromDay);
+    }
+  });
+  // 清理已完成的来源天滚存任务和记录
+  daysToClear.forEach(d => {
+    state.rolloverTasks = state.rolloverTasks.filter(r => r.fromDay != d);
+    delete state.rolloverSources[d];
+  });
+  if(daysToClear.length > 0) saveState(state);
 }
 
 function skipDay(){
