@@ -609,6 +609,24 @@ const QUIZZES = {
 ]}
 };
 
+// ==================== 配套练习文件映射 ====================
+const PRACTICE_FILES = {
+2:'day02-数据输入与格式.xlsx',
+3:'day03-筛选与排序.xlsx',
+4:'day04-数据清洗.xlsx',
+5:'day05-数据验证与条件格式.xlsx',
+6:'day06-透视表基础.xlsx',
+7:'day06-透视表基础.xlsx',
+9:'day09-统计函数.xlsx',
+10:'day10-VLOOKUP.xlsx',
+11:'day11-逻辑与文本函数.xlsx',
+12:'day12-图表.xlsx',
+19:'day19-SQL入门-示例数据.xlsx',
+20:'day19-31-SQL速查表.xlsx',21:'day19-31-SQL速查表.xlsx',22:'day19-31-SQL速查表.xlsx',23:'day19-31-SQL速查表.xlsx',
+26:'day19-31-SQL速查表.xlsx',27:'day19-31-SQL速查表.xlsx',
+29:'day19-31-SQL速查表.xlsx',30:'day19-31-SQL速查表.xlsx',31:'day19-31-SQL速查表.xlsx',
+};
+
 // ==================== 保姆级教程数据 ====================
 const TUTORIALS = {
 1:[
@@ -969,6 +987,11 @@ function renderDailyContent(){
       </div>`;
     });
     html += `</div>`;
+    // 配套练习文件下载
+    const practiceFile = PRACTICE_FILES[state.currentDay];
+    if(practiceFile){
+      html += `<a href="practice-files/${practiceFile}" download style="display:inline-block;margin-top:10px;padding:7px 16px;background:var(--accent);color:#fff;border-radius:6px;font-size:.82rem;text-decoration:none;">📥 下载配套练习文件</a>`;
+    }
   }
 
   // Rollover任务
@@ -1214,6 +1237,11 @@ function renderDailyContentReview(){
       </div>`;
     });
     html += `</div>`;
+    // 配套练习文件下载
+    const practiceFileReview = PRACTICE_FILES[reviewMode];
+    if(practiceFileReview){
+      html += `<a href="practice-files/${practiceFileReview}" download style="display:inline-block;margin-top:10px;padding:7px 16px;background:var(--accent);color:#fff;border-radius:6px;font-size:.82rem;text-decoration:none;">📥 下载配套练习文件</a>`;
+    }
   }
 
   // 任务（只读）
