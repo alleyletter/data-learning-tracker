@@ -46,8 +46,8 @@ def style_data(ws, start_row, end_row, max_col):
             cell.font = DATA_FONT
             cell.border = THIN_BORDER
 
-def add_instruction_sheet(wb, title, instructions):
-    """添加练习说明工作表"""
+def add_instruction_sheet(wb, title, instructions, thinking=None):
+    """添加练习说明工作表,可在末尾追加折叠答案的思考题"""
     ws = wb.create_sheet('练习说明', 0)
     ws.column_dimensions['A'].width = 80
     ws.cell(row=1, column=1, value=title).font = Font(name='微软雅黑', bold=True, size=14)
@@ -57,6 +57,98 @@ def add_instruction_sheet(wb, title, instructions):
     # 删除openpyxl新建工作簿时自带的空工作表
     if 'Sheet' in wb.sheetnames:
         del wb['Sheet']
+    if thinking:
+        add_thinking(ws, 3 + len(instructions) + 1, thinking)
+    return ws
+
+
+def add_thinking(ws, start_row, questions):
+    """在指定工作表追加思考题: 答案行默认折叠,点左侧+号展开查看"""
+    r = start_row
+    c = ws.cell(row=r, column=1, value='📝 思考题（先自己想想，点左侧+号展开答案）')
+    c.font = Font(name='微软雅黑', bold=True, size=11, color='E67E22')
+    r += 1
+    for qi, (q, a) in enumerate(questions, 1):
+        ws.cell(row=r, column=1, value=f'思考题{qi}: {q}').font = Font(name='微软雅黑', bold=True, size=10.5)
+        r += 1
+        ans_start = r
+        for j, line in enumerate(a.split('\n')):
+            c = ws.cell(row=r, column=1, value=('💡 答案: ' if j == 0 else '') + line)
+            c.font = Font(name='微软雅黑', size=10.5, color='2E7D32')
+            c.alignment = Alignment(wrap_text=True)
+            r += 1
+        # 答案行折叠(Excel/WPS都支持行分组,点左侧+号展开)
+        ws.row_dimensions.group(ans_start, r - 1, outline_level=1, hidden=True)
+        r += 1
+    return r
+
+
+def add_thinking_sheet(wb, questions):
+    """独立"思考题"工作表(用于没有练习说明表的文件)"""
+    ws = wb.create_sheet('思考题')
+    ws.column_dimensions['A'].width = 80
+    ws.cell(row=1, column=1, value='📝 思考题（先自己想想，点左侧+号展开答案）').font = Font(name='微软雅黑', bold=True, size=13, color='E67E22')
+    for qi, (q, a) in enumerate(questions, 1):
+        ws.cell(row=2 + (qi - 1) * 4, column=1, value=f'思考题{qi}: {q}').font = Font(name='微软雅黑', bold=True, size=11)
+        ans_start = 3 + (qi - 1) * 4
+        for j, line in enumerate(a.split('\n')):
+            c = ws.cell(row=ans_start + j, column=1, value=('💡 答案: ' if j == 0 else '') + line)
+            c.font = Font(name='微软雅黑', size=10.5, color='2E7D32')
+            c.alignment = Alignment(wrap_text=True)
+        ws.row_dimensions.group(ans_start, ans_start + len(a.split('\n')) - 1, outline_level=1, hidden=True)
+    return ws
+
+
+# ==================== 各文件思考题(答案折叠) ====================
+DAY02_THINKING = [
+    ('文本"123"和数字123在筛选时有什么不同？怎么一眼分辨？', '筛选"大于100"时只有数字123会被筛出来，文本"123"不参与数值比较。一眼分辨看对齐方式：文本左对齐、数字右对齐（左上角有绿色小三角提示的也是文本）。'),
+    ('Ctrl+E（智能填充）什么时候会失灵？补完后必须做什么？', '数据没有统一规律时，补出来的结果是错的。补完之后必须从上到下扫一眼全部结果，不对的单元格手动改。'),
+]
+DAY03_THINKING = [
+    ('筛选和排序的本质区别？发报告给同事前应该用哪个？', '筛选只是"隐藏"不符合条件的行，数据还在原位；排序是真正"重新排列"行的顺序。发报告前先排好序再发，别人打开一眼能看懂。'),
+    ('多条件排序"先按位数升序、再按价格降序"是怎么排的？', '先按位数分组排，位数相同的行内部再按价格从大到小排。是"先主后次"的关系，不是两个条件混成一次排序。'),
+]
+DAY04_THINKING = [
+    ('去重时勾一列和勾两列的区别？给发奖名单去重应该勾什么？', '勾一列=该列内容重复就删（同一用户的多条记录会被误删）；勾两列=两列同时相同才视为重复。发奖名单按"用户ID"单列去重。'),
+    ('为什么去重和替换之前一定要先复制一份原始数据？', '这两个操作不可逆，发奖励场景删错了是真金白银的损失。"动刀前先备份"是数据分析的第一条职业习惯。'),
+]
+DAY05_THINKING = [
+    ('数据验证和条件格式都跟"数据质量"有关，区别是什么？', '数据验证是"预防"——在数据进来之前限制输入，不让错数据出现；条件格式是"体检"——数据已经存在，标出来让你看。一个管入口，一个管事后。'),
+    ('本文件里价格>1000的商品有哪些？<100的又有哪些？这反映什么定价策略？', '>1000：iPhone 15 Pro(1299)、MacBook Air(2499)、空气净化器(1999)、扫地机器人(1299)、蚕丝被(1599)——集中在电子和家居。\n<100：机械键盘(89)、纯棉T恤(39)、台灯LED(89)、蓝牙音箱(79)、瑜伽垫(49)——以服装和户外为主。\n策略：电子/家居走高单价利润款，服装/户外走低价走量款。'),
+]
+DAY06_THINKING = [
+    ('透视表四个区域，一句话分别是什么？', '行/列=按什么分类；值=汇总计算什么（计数/求和/平均）；筛选器=整体按什么条件过滤。'),
+    ('透视表默认对数字字段和文本字段分别做什么汇总？想要"平均值"怎么办？', '数字默认求和、文本默认计数。要平均值：点值字段→值字段设置→汇总方式选"平均值"。'),
+]
+DAY07_THINKING = [
+    ('什么时候需要日期分组？', '行标签是日期时每天一行几百行没法看。右键日期→组合→按月/季度/年归并，几百行变十几行，趋势一目了然。'),
+    ('切片器比筛选下拉框好在哪？（至少2点）', '①一眼能看出当前筛的是什么；②可以同时联动多个透视表和图表；③给老板展示时点按钮更直观专业。'),
+]
+DAY09_THINKING = [
+    ('COUNT和COUNTA混用会有什么后果？', 'COUNT只数数字，COUNTA数所有非空。给"用户名"这种文本列用COUNT会得到0，人数统计全错。统计前先想清楚列的类型。'),
+    ('用AVERAGEIF算一下：本数据里哪个分类的平均客单价最高？', '答案是"电子产品"（平均1562.72元/单）。\n方法：=AVERAGEIF(分类列,某分类,金额列)，每个分类各算一遍再比较。'),
+]
+DAY10_THINKING = [
+    ('VLOOKUP第四参数TRUE和FALSE各适合什么场景？', 'FALSE=精确匹配，找ID必须用它（找不到返回#N/A）；TRUE=近似匹配，"找最接近且不超过"，适合金额→折扣档位，但要求查找列升序。'),
+    ('两张表都有"用户ID"，VLOOKUP却返回#N/A，最可能的原因？', '格式不一致——一边是文本一边是数字（看对齐方式分辨），或有多余空格。先统一两边格式再匹配。'),
+]
+DAY11_THINKING = [
+    ('嵌套IF和IFS哪个更推荐？为什么？', 'IFS（Excel 2016+/WPS新版都有）。条件多时嵌套IF要一层层数括号，IFS平铺直叙，别人一眼能看懂判断逻辑。'),
+    ('=TEXT(123,"000")的结果是数字123吗？', '不是，是文本"123"。TEXT返回的是文本，不能参与计算。需要计算时用原值。'),
+]
+DAY12_THINKING = [
+    ('折线图和柱状图各适合什么场景？', '折线图=展示随时间的变化趋势；柱状图=分类之间比大小。分类数据画成折线图会暗示"连续性"，误导读者。'),
+    ('饼图分类超过几个就不该用？', '5个。分类太多饼图碎成一片，读者分不清谁大谁小，改用柱状图。'),
+]
+DAY19_THINKING = [
+    ('在本文件的模拟world表上，写出"查询亚洲国家名字和人口"的SQL。', "SELECT name, population FROM [表] WHERE continent = 'Asia'"),
+    ('"WHERE population > 100000000 AND area > 1000000"会返回哪些国家？', 'China、India、United States、Indonesia、Brazil、Russia、Mexico、Egypt 共8个。注意：Japan、Nigeria人口达标但面积不够；Vietnam人口差一点不到1亿。'),
+]
+SQL_THINKING = [
+    ('WHERE和HAVING的执行顺序？为什么"WHERE COUNT(*)>10"会报错？', '执行顺序：FROM→WHERE→GROUP BY→HAVING→SELECT→ORDER BY→LIMIT。WHERE在分组前执行，那时COUNT(*)还没算出来，所以分组后的条件只能放HAVING里。'),
+    ('LEFT JOIN和INNER JOIN的区别？工作中哪个更常用？', 'LEFT JOIN保留左表所有行，右表没匹配就填NULL（"所有用户，买没买过都保留"）；INNER JOIN只留两边都匹配的行。工作中90%用LEFT JOIN。'),
+    ('窗口函数和GROUP BY最大的区别？', 'GROUP BY把组内行合并成一行（原始明细丢失）；窗口函数保留所有原始行，只在每行旁边加一列计算结果（如组内排名）。'),
+]
 
 def generate_day02():
     """Day 2: 数据输入与格式"""
@@ -76,7 +168,7 @@ def generate_day02():
         '3. 选中B1:B2→按Ctrl+E→Excel自动补全所有名字',
         '4. 同样方法在C列提取手机号',
         '5. 试试反过来：在D列把名字和手机号用"-"重新合并（如"张三-13800138001"）',
-    ])
+    ], thinking=DAY02_THINKING)
 
     # Sheet: 数据类型练习
     ws1 = wb.create_sheet('数据类型练习')
@@ -141,7 +233,7 @@ def generate_day03():
         '',
         '【自由探索】',
         '试试筛选+排序的组合：先筛出"上海"的订单，再按金额降序排',
-    ])
+    ], thinking=DAY03_THINKING)
 
     ws = wb.create_sheet('订单明细')
     headers = ['订单ID', '商品名称', '分类', '价格', '数量', '金额', '日期', '城市']
@@ -196,7 +288,7 @@ def generate_day04():
         '2. D列有些单元格里有换行符（Alt+Enter产生的），用查找替换清理',
         '',
         '【注意】操作前先把"脏数据"工作表复制一份（右键标签→移动或复制→建立副本），防止改坏了没法恢复。',
-    ])
+    ], thinking=DAY04_THINKING)
 
     ws = wb.create_sheet('脏数据')
     headers = ['用户ID-日期（需分列）', '用户ID（分列结果）', '用户姓名（有多余空格）', '备注（有换行符）']
@@ -247,8 +339,8 @@ def generate_day05():
         '3. 选中库存列→条件格式→数据条→一眼看出库存高低',
         '4. 试试色阶：选中价格列→条件格式→色阶→绿-黄-红',
         '',
-        '【思考】价格>1000的和<100的商品，分别是什么类型？这反映了什么定价策略？',
-    ])
+        '【思考】价格>1000的和<100的商品，分别是什么类型？这反映了什么定价策略？（答案见下方折叠区）',
+    ], thinking=DAY05_THINKING)
 
     ws = wb.create_sheet('商品定价')
     headers = ['商品名称', '分类', '价格', '库存']
@@ -311,7 +403,7 @@ def generate_day06():
         '3. 插入切片器：选"分类"和"城市"→实现一键切换视角',
         '   WPS提示：WPS的切片器入口不同——先点击选中透视表→顶部出现"数据透视表工具"→在"分析"选项卡里点"插入切片器"（WPS 2019以上版本才有）',
         '4. 试试：同一个透视表同时看"各城市×各分类"的交叉销售额（行=城市，列=分类，值=金额求和）',
-    ])
+    ], thinking=DAY06_THINKING)
 
     ws = wb.create_sheet('销售明细')
     headers = ['日期', '商品名称', '分类', '城市', '数量', '单价', '金额']
@@ -365,8 +457,8 @@ def generate_day09():
         '7. =COUNTIFS(分类列,"电子产品",城市列,"北京") → 北京电子产品订单数',
         '8. =SUMIFS(金额列,分类列,"服装鞋帽",金额列,">500") → 服装类且>500的销售额',
         '',
-        '【思考】哪个分类的平均客单价最高？用AVERAGEIF试试。',
-    ])
+        '【思考】哪个分类的平均客单价最高？用AVERAGEIF试试。（答案见下方折叠区）',
+    ], thinking=DAY09_THINKING)
 
     ws = wb.create_sheet('销售记录')
     headers = ['订单ID', '分类', '城市', '金额', '日期']
@@ -418,7 +510,7 @@ def generate_day10():
         '5. 故意把某个订单的用户ID改成一个不存在的ID（如U9999），看看VLOOKUP返回什么（#N/A）',
         '',
         '【注意】VLOOKUP只能从左往右查。如果想"根据姓名查ID"（从右往左），需要用INDEX+MATCH或XLOOKUP（XLOOKUP需Excel 2021/365或WPS 2021以上版本）。',
-    ])
+    ], thinking=DAY10_THINKING)
 
     # 用户表
     ws_users = wb.create_sheet('用户表')
@@ -488,7 +580,7 @@ def generate_day11():
         '7. 在J列，显示星期几：=TEXT(C2,"aaaa")（中文版Excel/WPS用aaaa；英文版Excel/WPS用"dddd"）',
         '',
         '【综合】试着用IF+LEFT组合：如果SKU前3位是"ELC"就显示"电子产品"，否则显示"其他"',
-    ])
+    ], thinking=DAY11_THINKING)
 
     ws = wb.create_sheet('商品编码')
     headers = ['商品名', 'SKU编码', '上架日期', '价格', '价格档次(IF)', '类别(LEFT)', '品牌(MID)', '序号(RIGHT)', '日期格式化(TEXT)', '星期(TEXT)']
@@ -540,7 +632,7 @@ def generate_day12():
         '5. 给饼图加上数据标签（显示百分比）',
         '',
         '【美化】给每张图加上标题、数据标签，调整颜色。',
-    ])
+    ], thinking=DAY12_THINKING)
 
     # 月度统计
     ws1 = wb.create_sheet('月度统计')
@@ -738,6 +830,8 @@ def generate_sql_cheatsheet():
 
     ws3.cell(row=12, column=1, value='💡 记忆口诀：FWGH SOL — From Where Group Having Select Order Limit').font = Font(name='微软雅黑', size=10, color='E74C3C')
 
+    add_thinking_sheet(wb, SQL_THINKING)
+
     path = os.path.join(OUTPUT_DIR, 'day19-31-SQL速查表.xlsx')
     wb.save(path)
     print(f'  [OK] {os.path.basename(path)}')
@@ -794,6 +888,8 @@ def generate_day19_reference():
     ]
     for i, tip in enumerate(tips):
         ws.cell(row=tip_row + 1 + i, column=1, value=tip).font = Font(name='Consolas', size=10, color='4472C4')
+
+    add_thinking_sheet(wb, DAY19_THINKING)
 
     path = os.path.join(OUTPUT_DIR, 'day19-SQL入门-示例数据.xlsx')
     wb.save(path)
