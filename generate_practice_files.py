@@ -150,6 +150,17 @@ SQL_THINKING = [
     ('窗口函数和GROUP BY最大的区别？', 'GROUP BY把组内行合并成一行（原始明细丢失）；窗口函数保留所有原始行，只在每行旁边加一列计算结果（如组内排名）。'),
 ]
 
+def add_data_sheet(wb, name, headers, rows, widths=None):
+    """追加一个数据工作表(表头+样式)"""
+    ws = wb.create_sheet(name)
+    style_header(ws, headers, widths or [14] * len(headers))
+    for i, row in enumerate(rows, 2):
+        for j, val in enumerate(row, 1):
+            ws.cell(row=i, column=j, value=val)
+    style_data(ws, 2, len(rows) + 1, len(headers))
+    return ws
+
+
 def generate_day02():
     """Day 2: 数据输入与格式"""
     wb = Workbook()
@@ -233,6 +244,7 @@ def generate_day03():
         '',
         '【自由探索】',
         '试试筛选+排序的组合：先筛出"上海"的订单，再按金额降序排',
+        '【备用实战】没有真实靓号数据时，用"靓号数据(备用实战)"工作表练习（结构与真实数据一致）',
     ], thinking=DAY03_THINKING)
 
     ws = wb.create_sheet('订单明细')
@@ -264,6 +276,8 @@ def generate_day03():
             ws.cell(row=i, column=j, value=val)
     style_data(ws, 2, len(rows) + 1, len(headers))
 
+    add_data_sheet(wb, '靓号数据(备用实战)', ['号码', '位数', '规律类型', '价格(乐元)', '上架状态'], generate_haoid_rows(60))
+
     path = os.path.join(OUTPUT_DIR, 'day03-筛选与排序.xlsx')
     wb.save(path)
     print(f'  [OK] {os.path.basename(path)}')
@@ -287,6 +301,7 @@ def generate_day04():
         '1. 把多余的空格删掉（C列有些名字前后有空格）',
         '2. D列有些单元格里有换行符（Alt+Enter产生的），用查找替换清理',
         '',
+        '【备用实战】"活动参与名单(备用实战)"工作表模拟活动回复用户列表（含重复用户），练去重用',
         '【注意】操作前先把"脏数据"工作表复制一份（右键标签→移动或复制→建立副本），防止改坏了没法恢复。',
     ], thinking=DAY04_THINKING)
 
@@ -314,6 +329,8 @@ def generate_day04():
             ws.cell(row=i, column=j, value=val)
     style_data(ws, 2, len(data) + 1, len(headers))
 
+    add_data_sheet(wb, '活动参与名单(备用实战)', ['用户ID', '昵称', '参与活动', '参与日期'], generate_participant_rows(34))
+
     path = os.path.join(OUTPUT_DIR, 'day04-数据清洗.xlsx')
     wb.save(path)
     print(f'  [OK] {os.path.basename(path)}')
@@ -338,6 +355,7 @@ def generate_day05():
         '2. 再加一条：小于100→设为绿色',
         '3. 选中库存列→条件格式→数据条→一眼看出库存高低',
         '4. 试试色阶：选中价格列→条件格式→色阶→绿-黄-红',
+        '【备用实战】"靓号定价(备用实战)"工作表模拟靓号定价表，练数据验证和条件格式用',
         '',
         '【思考】价格>1000的和<100的商品，分别是什么类型？这反映了什么定价策略？（答案见下方折叠区）',
     ], thinking=DAY05_THINKING)
@@ -379,6 +397,9 @@ def generate_day05():
         ws.cell(row=i, column=3, value=price)
         ws.cell(row=i, column=4, value=stock)
     style_data(ws, 2, len(products) + 1, len(headers))
+
+    add_data_sheet(wb, '靓号定价(备用实战)', ['号码', '规律类型', '价格(乐元)', '上架状态'],
+                   [[r[0], r[2], r[3], r[4]] for r in generate_haoid_rows(60)])
 
     path = os.path.join(OUTPUT_DIR, 'day05-数据验证与条件格式.xlsx')
     wb.save(path)
@@ -456,6 +477,7 @@ def generate_day09():
         '6. =SUMIF(分类列,"电子产品",金额列) → 电子产品总销售额',
         '7. =COUNTIFS(分类列,"电子产品",城市列,"北京") → 北京电子产品订单数',
         '8. =SUMIFS(金额列,分类列,"服装鞋帽",金额列,">500") → 服装类且>500的销售额',
+        '【备用实战】"靓号库(备用实战)"工作表模拟靓号库，练COUNTIF统计规律类型用',
         '',
         '【思考】哪个分类的平均客单价最高？用AVERAGEIF试试。（答案见下方折叠区）',
     ], thinking=DAY09_THINKING)
@@ -485,6 +507,8 @@ def generate_day09():
     ws.column_dimensions['G'].width = 30
     ws.column_dimensions['H'].width = 20
 
+    add_data_sheet(wb, '靓号库(备用实战)', ['号码', '位数', '规律类型', '价格(乐元)', '上架状态'], generate_haoid_rows(80))
+
     path = os.path.join(OUTPUT_DIR, 'day09-统计函数.xlsx')
     wb.save(path)
     print(f'  [OK] {os.path.basename(path)}')
@@ -508,6 +532,7 @@ def generate_day10():
         '【进阶】',
         '4. 试试如果写成 =VLOOKUP(B2, 用户表!A:D, 2, TRUE) 会发生什么？（近似匹配 vs 精确匹配）',
         '5. 故意把某个订单的用户ID改成一个不存在的ID（如U9999），看看VLOOKUP返回什么（#N/A）',
+        '【备用实战】"活动参与名单(备用实战)"工作表的用户ID与"用户表"对齐，直接VLOOKUP练匹配用户等级',
         '',
         '【注意】VLOOKUP只能从左往右查。如果想"根据姓名查ID"（从右往左），需要用INDEX+MATCH或XLOOKUP（XLOOKUP需Excel 2021/365或WPS 2021以上版本）。',
     ], thinking=DAY10_THINKING)
@@ -554,6 +579,8 @@ def generate_day10():
     style_data(ws_orders, 2, len(orders) + 1, len(order_headers))
 
     # 说明表保持在最前,打开文件先看到练习说明(VLOOKUP不受工作表顺序影响)
+    add_data_sheet(wb, '活动参与名单(备用实战)', ['用户ID', '昵称', '参与活动', '参与日期'], generate_participant_rows(25))
+
     path = os.path.join(OUTPUT_DIR, 'day10-VLOOKUP.xlsx')
     wb.save(path)
     print(f'  [OK] {os.path.basename(path)}')
@@ -578,6 +605,7 @@ def generate_day11():
         '【TEXT 格式化】',
         '6. 在I列，把日期列格式化为中文：=TEXT(C2,"yyyy年mm月dd日")',
         '7. 在J列，显示星期几：=TEXT(C2,"aaaa")（中文版Excel/WPS用aaaa；英文版Excel/WPS用"dddd"）',
+        '【备用实战】"靓号规律判断(备用实战)"工作表只给号码，用函数在空白列判断规律类型',
         '',
         '【综合】试着用IF+LEFT组合：如果SKU前3位是"ELC"就显示"电子产品"，否则显示"其他"',
     ], thinking=DAY11_THINKING)
@@ -609,6 +637,13 @@ def generate_day11():
         ws.cell(row=i, column=3, value=date_str)
         ws.cell(row=i, column=4, value=price)
     style_data(ws, 2, len(products) + 1, len(headers))
+
+    ws_judge = wb.create_sheet('靓号规律判断(备用实战)')
+    style_header(ws_judge, ['号码', '规律类型(用函数判断)'], [18, 24])
+    haoid_nums = [r[0] for r in generate_haoid_rows(30)]
+    for i, num in enumerate(haoid_nums, 2):
+        ws_judge.cell(row=i, column=1, value=num)
+    style_data(ws_judge, 2, len(haoid_nums) + 1, 2)
 
     path = os.path.join(OUTPUT_DIR, 'day11-逻辑与文本函数.xlsx')
     wb.save(path)
@@ -896,6 +931,109 @@ def generate_day19_reference():
     print(f'  [OK] {os.path.basename(path)}')
 
 
+# ==================== 备用实战数据(没有真实数据时的替身) ====================
+# 结构、字段、价格分布与用户真实业务数据一致
+HAOID_PRICE_RANGES = [(10, 49, 15), (50, 99, 35), (100, 180, 35), (181, 500, 15)]  # 引流/主力/利润/展示
+
+def generate_haoid_rows(n=100):
+    """模拟靓号库: 号码/位数/规律类型/价格(乐元)/上架状态"""
+    patterns = ['888', '顺子', '豹子', 'AABB', '普通']
+    weights = [20, 8, 5, 12, 55]
+    rows = []
+    for _ in range(n):
+        digits = random.randint(5, 8)
+        pattern = random.choices(patterns, weights=weights)[0]
+        num = ''.join(str(random.randint(0, 9)) for _ in range(digits))
+        if pattern == '888' and digits >= 4:
+            num = num[:-3] + '888'
+        elif pattern == '顺子':
+            start = random.randint(0, 6)
+            seq = ''.join(str((start + k) % 10) for k in range(min(4, digits)))
+            num = num[:-len(seq)] + seq
+        elif pattern == '豹子' and digits >= 5:
+            d = str(random.randint(0, 9))
+            num = num[:-4] + d * 4
+        elif pattern == 'AABB' and digits >= 5:
+            d1, d2 = str(random.randint(0, 9)), str(random.randint(0, 9))
+            num = num[:-4] + d1 + d1 + d2 + d2
+        lo, hi, _ = random.choices(HAOID_PRICE_RANGES, weights=[r[2] for r in HAOID_PRICE_RANGES])[0]
+        price = round(random.uniform(lo, hi))
+        status = random.choices(['在售', '已售', '下架'], weights=[60, 30, 10])[0]
+        rows.append([num, digits, pattern, price, status])
+    return rows
+
+def generate_activity_rows():
+    """模拟13场活动: 活动名/类型/日期/参与人数/购买人数/发券数/转化率"""
+    events = [
+        ('春节福袋', '节日', '2026-02-10'), ('520告白季', '折扣', '2026-05-20'),
+        ('双11狂欢', '折扣', '2025-11-11'), ('圣诞竞拍夜', '竞拍', '2025-12-24'),
+        ('端午打卡', '打卡', '2026-06-19'), ('元旦集卡', '打卡', '2026-01-01'),
+        ('暑期福利日', '折扣', '2026-07-15'), ('中秋特卖', '节日', '2025-10-06'),
+        ('国庆竞拍', '竞拍', '2025-10-01'), ('五一特惠', '折扣', '2026-05-01'),
+        ('元宵灯会', '节日', '2026-03-05'), ('清明踏青', '打卡', '2026-04-05'),
+        ('618年中庆', '折扣', '2026-06-18'),
+    ]
+    rows = []
+    for name, typ, date in events:
+        participants = random.randint(80, 600)
+        buyers = random.randint(int(participants * 0.2), int(participants * 0.6))
+        coupons = random.randint(int(participants * 0.5), participants)
+        conv = f'{buyers / participants * 100:.1f}%'
+        rows.append([name, typ, date, participants, buyers, coupons, conv])
+    return rows
+
+def generate_participant_rows(n=30):
+    """模拟活动参与名单: 用户ID/昵称/参与活动/参与日期(含重复用户,供去重和VLOOKUP练习)"""
+    nicknames = ['小鱼', '阿明', '柠檬茶', '夜风', '青柠', '北岛', '星星', '大树', '麦子', '浮云',
+                 '海盐', '奶茶', '柚子', '白鹿', '山川', '风筝', '月亮', '夏夜', '落落', '石头']
+    events = ['春节福袋', '520告白季', '双11狂欢', '圣诞竞拍夜', '端午打卡', '元旦集卡', '618年中庆']
+    user_ids = [f'U{1001 + i}' for i in range(12)]  # 与day10用户表ID对齐,VLOOKUP可直用
+    rows = []
+    for _ in range(n):
+        uid = random.choice(user_ids)
+        nick = random.choice(nicknames)
+        event = random.choice(events)
+        date = f'2026-{random.randint(1, 8):02d}-{random.randint(1, 28):02d}'
+        rows.append([uid, nick, event, date])
+    # 故意加几条完全重复的行(供去重练习)
+    for _ in range(4):
+        rows.append(rows[random.randint(0, n - 1)][:])
+    return rows
+
+def generate_activity_detail_rows(n=300):
+    """模拟活动参与明细(阶段三AI辅助分析用): 用户ID/活动名/类型/日期/是否购买/消费金额"""
+    events = [('春节福袋', '节日'), ('520告白季', '折扣'), ('双11狂欢', '折扣'),
+              ('圣诞竞拍夜', '竞拍'), ('端午打卡', '打卡'), ('元旦集卡', '打卡'),
+              ('暑期福利日', '折扣'), ('618年中庆', '折扣')]
+    user_ids = [str(48360000 + i) for i in range(80)]
+    rows = []
+    for _ in range(n):
+        uid = random.choice(user_ids)
+        name, typ = random.choice(events)
+        date = f'2026-{random.randint(1, 8):02d}-{random.randint(1, 28):02d}'
+        bought = random.choices([1, 0], weights=[35, 65])[0]
+        amount = round(random.uniform(50, 180)) if bought else 0
+        rows.append([uid, name, typ, date, bought, amount])
+    return rows
+
+
+def generate_backup_csvs():
+    """备用数据CSV(阶段三AI辅助分析+阶段四项目备用)"""
+    import csv as csv_mod
+    haoid = [['号码', '位数', '规律类型', '价格(乐元)', '上架状态', '上架日期']]
+    for row in generate_haoid_rows(120):
+        haoid.append(row[:5] + [f'2026-{random.randint(1, 8):02d}-{random.randint(1, 28):02d}'])
+    with open(os.path.join(OUTPUT_DIR, '备用数据-靓号库.csv'), 'w', newline='', encoding='utf-8-sig') as f:
+        csv_mod.writer(f).writerows(haoid)
+    print('  [OK] 备用数据-靓号库.csv')
+
+    detail = [['用户ID', '活动名', '活动类型', '参与日期', '是否购买', '消费金额(乐元)']]
+    detail += generate_activity_detail_rows(300)
+    with open(os.path.join(OUTPUT_DIR, '备用数据-活动明细.csv'), 'w', newline='', encoding='utf-8-sig') as f:
+        csv_mod.writer(f).writerows(detail)
+    print('  [OK] 备用数据-活动明细.csv')
+
+
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print('正在生成练习文件...\n')
@@ -911,6 +1049,7 @@ def main():
     generate_day12()
     generate_day19_reference()
     generate_sql_cheatsheet()
+    generate_backup_csvs()
 
     print(f'\n[OK] 全部完成！文件保存在 {OUTPUT_DIR}')
     print(f'共 {len(os.listdir(OUTPUT_DIR))} 个文件')

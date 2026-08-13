@@ -621,10 +621,16 @@ const PRACTICE_FILES = {
 10:'day10-VLOOKUP.xlsx',
 11:'day11-逻辑与文本函数.xlsx',
 12:'day12-图表.xlsx',
+14:'备用数据-靓号库.csv',15:'备用数据-活动明细.csv',
 19:'day19-SQL入门-示例数据.xlsx',
 20:'day19-31-SQL速查表.xlsx',21:'day19-31-SQL速查表.xlsx',22:'day19-31-SQL速查表.xlsx',23:'day19-31-SQL速查表.xlsx',
 26:'day19-31-SQL速查表.xlsx',27:'day19-31-SQL速查表.xlsx',
 29:'day19-31-SQL速查表.xlsx',30:'day19-31-SQL速查表.xlsx',31:'day19-31-SQL速查表.xlsx',
+37:'备用数据-靓号库.csv',39:'备用数据-靓号库.csv',40:'备用数据-活动明细.csv',41:'备用数据-靓号库.csv',
+42:'备用数据-活动明细.csv',44:'备用数据-活动明细.csv',45:'备用数据-靓号库.csv',46:'备用数据-靓号库.csv',
+49:'乐讯数据导出指南.md',50:'备用数据-靓号库.csv',51:'乐讯数据导出指南.md',52:'乐讯数据导出指南.md',
+53:'备用数据-活动明细.csv',54:'备用数据-活动明细.csv',55:'乐讯数据导出指南.md',56:'乐讯数据导出指南.md',
+57:'乐讯数据导出指南.md',58:'乐讯数据导出指南.md',59:'乐讯数据导出指南.md',
 };
 
 // ==================== 每日思考题数据 ====================
@@ -1255,11 +1261,12 @@ function renderDailyContent(){
       </div>`;
     });
     html += `</div>`;
-    // 配套练习文件下载
-    const practiceFile = PRACTICE_FILES[state.currentDay];
-    if(practiceFile){
-      html += `<a href="practice-files/${practiceFile}" download style="display:inline-block;margin-top:10px;padding:7px 16px;background:var(--accent);color:#fff;border-radius:6px;font-size:.82rem;text-decoration:none;">📥 下载配套练习文件</a>`;
-    }
+  }
+
+  // 配套练习文件/资料下载(练习文件、备用数据CSV、数据导出指南)
+  const practiceFile = PRACTICE_FILES[state.currentDay];
+  if(practiceFile){
+    html += `<a href="practice-files/${practiceFile}" download style="display:inline-block;margin-bottom:10px;padding:7px 16px;background:var(--accent);color:#fff;border-radius:6px;font-size:.82rem;text-decoration:none;">📥 下载配套练习文件/资料</a>`;
   }
 
   // Rollover任务
@@ -1507,11 +1514,12 @@ function renderDailyContentReview(){
       </div>`;
     });
     html += `</div>`;
-    // 配套练习文件下载
-    const practiceFileReview = PRACTICE_FILES[reviewMode];
-    if(practiceFileReview){
-      html += `<a href="practice-files/${practiceFileReview}" download style="display:inline-block;margin-top:10px;padding:7px 16px;background:var(--accent);color:#fff;border-radius:6px;font-size:.82rem;text-decoration:none;">📥 下载配套练习文件</a>`;
-    }
+  }
+
+  // 配套练习文件/资料下载(复习模式)
+  const practiceFileReview = PRACTICE_FILES[reviewMode];
+  if(practiceFileReview){
+    html += `<a href="practice-files/${practiceFileReview}" download style="display:inline-block;margin-bottom:10px;padding:7px 16px;background:var(--accent);color:#fff;border-radius:6px;font-size:.82rem;text-decoration:none;">📥 下载配套练习文件/资料</a>`;
   }
 
   // 任务（只读）
