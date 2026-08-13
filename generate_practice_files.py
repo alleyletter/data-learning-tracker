@@ -9,6 +9,9 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+# 固定随机种子: 每次生成的数据一致,方便对照练习答案
+random.seed(42)
+
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'practice-files')
 
 # 通用样式
@@ -51,6 +54,9 @@ def add_instruction_sheet(wb, title, instructions):
     for i, line in enumerate(instructions, 3):
         ws.cell(row=i, column=1, value=line).font = Font(name='微软雅黑', size=10.5)
         ws.cell(row=i, column=1).alignment = Alignment(wrap_text=True)
+    # 删除openpyxl新建工作簿时自带的空工作表
+    if 'Sheet' in wb.sheetnames:
+        del wb['Sheet']
 
 def generate_day02():
     """Day 2: 数据输入与格式"""
@@ -449,9 +455,7 @@ def generate_day10():
             ws_orders.cell(row=i, column=j, value=val)
     style_data(ws_orders, 2, len(orders) + 1, len(order_headers))
 
-    # 把用户表放最前面
-    wb.move_sheet('用户表', offset=-1)
-
+    # 说明表保持在最前,打开文件先看到练习说明(VLOOKUP不受工作表顺序影响)
     path = os.path.join(OUTPUT_DIR, 'day10-VLOOKUP.xlsx')
     wb.save(path)
     print(f'  [OK] {os.path.basename(path)}')
@@ -475,7 +479,7 @@ def generate_day11():
         '',
         '【TEXT 格式化】',
         '6. 在I列，把日期列格式化为中文：=TEXT(C2,"yyyy年mm月dd日")',
-        '7. 在J列，显示星期几：=TEXT(C2,"aaaa")',
+        '7. 在J列，显示星期几：=TEXT(C2,"aaaa")（中文版Excel；英文版Excel用"dddd"）',
         '',
         '【综合】试着用IF+LEFT组合：如果SKU前3位是"ELC"就显示"电子产品"，否则显示"其他"',
     ])

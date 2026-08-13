@@ -581,7 +581,7 @@ const QUIZZES = {
 ]},
 22:{passing:70,questions:[
 {q:'SELECT COUNT(*) FROM world WHERE continent="Europe" 返回什么?',opts:['欧洲所有国家的列表','欧洲的人口总和','欧洲的国家数量','欧洲的面积总和'],ans:2,why:'COUNT(*)=数有多少行。加WHERE continent="Europe"=只数欧洲的行→欧洲的国家数。注意:COUNT(列名)不统计NULL,COUNT(*)统计所有行。'},
-{q:'SELECT continent, COUNT(*), SUM(population) FROM world GROUP BY continent,这条SQL会返回什么?',opts:['每个大洲的国家总数和总人口','全球的总人口','每个国家的信息','会报错(缺少条件)'],ans:0,why:'GROUP BY continent=按大洲分组,每个大洲一行。COUNT(*)=该大洲有多少国家,SUM(population)=该大洲总人口。聚合函数在GROUP BY内部执行。'},
+{q:'SELECT continent, COUNT(*), SUM(population) FROM world GROUP BY continent 这条SQL会返回什么?',opts:['每个大洲的国家总数和总人口','全球的总人口','每个国家的信息','会报错(缺少条件)'],ans:0,why:'GROUP BY continent=按大洲分组,每个大洲一行。COUNT(*)=该大洲有多少国家,SUM(population)=该大洲总人口。聚合函数在GROUP BY内部执行。'},
 {q:'AVG(列名)计算时,会自动忽略什么?',opts:['0值','NULL值','负数','最大值和最小值'],ans:1,why:'所有聚合函数(COUNT/SUM/AVG/MAX/MIN)都自动忽略NULL。AVG是SUM/NON-NULL-COUNT。如果NULL代表"未知",那AVG的结果是"已知数据的平均"。'}
 ]},
 23:{passing:70,questions:[
@@ -594,7 +594,7 @@ const QUIZZES = {
 ]},
 27:{passing:70,questions:[
 {q:'有三张表A、B、C,你要把它们连在一起。以下哪种写法是正确的?',opts:['SELECT * FROM A JOIN B JOIN C','SELECT * FROM A JOIN B ON ... JOIN C ON ...','SELECT * FROM A JOIN B AND C','JOIN不支持三表连接'],ans:1,why:'多表JOIN就是串联:FROM A JOIN B ON A.id=B.id JOIN C ON B.id=C.id。每JOIN一张表就跟一个ON条件。也可以给表取别名简化:FROM users u JOIN orders o ON u.id=o.user_id。'},
-{q:'一张员工表里有"员工ID"和"上级ID"两列。要查出"每个员工+他的上级名字",需要用什么?',opts:['子查询','自连接(表跟自己做JOIN)','UNION','UNION'],ans:1,why:'自连接(Self Join)=同一张表用不同别名连两次:SELECT e.name AS 员工,m.name AS 上级 FROM emp e LEFT JOIN emp m ON e.manager_id=m.id。这是面试高频考点。'}
+{q:'一张员工表里有"员工ID"和"上级ID"两列。要查出"每个员工+他的上级名字",需要用什么?',opts:['子查询','自连接(表跟自己做JOIN)','CROSS JOIN(交叉连接)','UNION(合并查询结果)'],ans:1,why:'自连接(Self Join)=同一张表用不同别名连两次:SELECT e.name AS 员工,m.name AS 上级 FROM emp e LEFT JOIN emp m ON e.manager_id=m.id。这是面试高频考点。'}
 ]},
 29:{passing:70,questions:[
 {q:'子查询通常出现在SQL的哪个位置?',opts:['只能放在WHERE后面','可以放在SELECT/FROM/WHERE中','只能放在FROM后面','只能放在SELECT后面'],ans:1,why:'子查询可以出现在:WHERE col IN (SELECT...),FROM (SELECT...) AS tmp,SELECT (SELECT...) AS col。WHERE子查询最常见,FROM子查询常用于先聚合再筛选。'},
@@ -759,10 +759,14 @@ function loadState(){
       if(s.rolloverSources){
         Object.keys(s.rolloverSources).forEach(fromDay => {
           const src = s.rolloverSources[fromDay];
-          // 该天没有任何滚存任务残留 = 所有任务已补完
+          // 该天没有任何滚存任务残留
           const remaining = (s.rolloverTasks||[]).filter(r => r.fromDay == fromDay).length;
-          if(remaining === 0 && !s.completedDays[fromDay]){
-            s.completedDays[fromDay] = true;
+          if(remaining === 0){
+            // 只有当来源天原本的任务就全部做完,才算完成;
+            // 任务丢失(如旧版bug清空)不能算完成,只清理账本
+            if(!s.completedDays[fromDay] && src && src.done >= src.total){
+              s.completedDays[fromDay] = true;
+            }
             delete s.rolloverSources[fromDay];
           }
         });
@@ -869,6 +873,7 @@ function renderAll(){
 }
 
 function renderAllReview(){
+  checkNewDay();
   renderDashboard();
   renderReviewEntry();
   renderReviewBanner();
@@ -879,10 +884,15 @@ function renderAllReview(){
 function checkNewDay(){
   const now = todayStr();
   if(state.lastActiveDate && state.lastActiveDate !== now){
-    // 新的一天
-    if(!state.todayCheckedIn){
-      // 昨天没打卡,重置当日状态
-      // 但保留未完成的任务作为rollover
+    // 新的一天: 结算昨天的状态
+    if(state.todayCompleted){
+      // 昨天点了"今天就到这" → 今天自动推进到下一天
+      if(state.currentDay < 60) state.currentDay++;
+      state.todayCheckedIn = false;
+      state.todayCompleted = false;
+      state.todayTaskStatus = {};
+    } else if(state.todayCheckedIn){
+      // 昨天开始学过但没点"结束学习"(直接关了页面) → 滚存未完成的任务
       const undoneTasks = [];
       const prevDayData = getDayData(state.currentDay);
       if(prevDayData){
@@ -893,24 +903,25 @@ function checkNewDay(){
           }
         });
       }
-      // 如果有未完成任务,加入rollover
       if(undoneTasks.length>0){
         state.rolloverTasks = [...undoneTasks, ...state.rolloverTasks.filter(r=>r.fromDay!==state.currentDay)];
+        // 记账: 来源天已完成了几个任务(补齐checkRolloverCompletions的判定依据)
+        state.rolloverSources[state.currentDay] = {
+          done: (prevDayData ? prevDayData.tasks.length - undoneTasks.length : 0),
+          total: (prevDayData ? prevDayData.tasks.length : 0)
+        };
+        // 和"没学完"一致,当天打卡不计入连续
+        state.streak = Math.max(0,(state.streak||1)-1);
+      } else if(prevDayData && prevDayData.tasks.length>0){
+        // 任务全部勾完了但没点结束 → 视为当天完成
+        state.completedDays[state.currentDay] = true;
       }
-      // 任务已rollover,推进到下一天(避免"昨天未完成"和"今日任务"显示同一批内容)
-      if(state.currentDay < 60){
-        state.currentDay++;
-      }
-      state.todayCheckedIn = false;
-      state.todayCompleted = false;
-      state.todayTaskStatus = {};
-    } else {
-      // 昨天点了"今天就到这",今天自动推进
       if(state.currentDay < 60) state.currentDay++;
       state.todayCheckedIn = false;
       state.todayCompleted = false;
       state.todayTaskStatus = {};
     }
+    // 昨天完全没打开/没开始 → 什么都不动,今天继续同一天(不制造虚假积压)
   }
   state.lastActiveDate = now;
   saveState(state);
@@ -1088,6 +1099,9 @@ function renderDailyContent(){
       }
     });
   }
+
+  // 恢复计时器环(勾选任务会重建页面元素,计时器不能丢)
+  updateTimerUI();
 }
 
 function renderTaskItem(t, key, isRollover){
@@ -1148,9 +1162,8 @@ function togglePhaseExpand(p){
 }
 
 function enterPreviewOrReview(dayNum){
+  // 只读预览/复习: 不碰今天的签到状态和任务勾选状态
   reviewMode = dayNum;
-  state.todayCheckedIn = false;
-  state.todayTaskStatus = {};
   renderAllReview();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1195,11 +1208,8 @@ function toggleReviewList(){
 }
 
 function enterReviewMode(dayNum){
+  // 只读复习: 不碰今天的签到状态和任务勾选状态
   reviewMode = dayNum;
-  // 重置签到状态以防干扰
-  state.todayCheckedIn = false;
-  state.todayCompleted = false;
-  state.todayTaskStatus = {};
   renderAllReview();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1363,34 +1373,69 @@ function toggleTask(key){
   renderDailyContent();
 }
 
+// 计时器状态(不持久化: 刷新页面后从0重新计)
+let timerElapsed = 0;
+let timerInterval = null;
+const TIMER_CIRCUM = 163.36; // 2*π*26
+
+function stopTimer(){
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+}
+
+function timerTick(){
+  timerElapsed++;
+  const totalSec = getDayEstimate()*60;
+  const ratio = Math.min(timerElapsed/totalSec, 1);
+  // 每次按id取最新元素: 页面重渲染后旧元素会被替换,不能缓存引用
+  const fill = document.getElementById('timerRingFill');
+  const text = document.getElementById('timerRingText');
+  if(fill) fill.style.strokeDashoffset = TIMER_CIRCUM*(1-ratio);
+  if(fill && ratio>=1) fill.style.stroke = 'var(--done)';
+  if(text){
+    const m = Math.floor(timerElapsed/60);
+    const s = timerElapsed%60;
+    text.textContent = `${m}:${String(s).padStart(2,'0')}`;
+  }
+}
+
+function updateTimerUI(){
+  // 渲染后恢复计时器环的显示状态(勾选任务等操作会重建页面元素)
+  const wrap = document.getElementById('timerRingWrap');
+  if(!wrap) return;
+  if(timerInterval){
+    wrap.style.display = 'flex';
+    const fill = document.getElementById('timerRingFill');
+    const text = document.getElementById('timerRingText');
+    const totalSec = getDayEstimate()*60;
+    const ratio = Math.min(timerElapsed/totalSec, 1);
+    if(fill){
+      fill.style.strokeDasharray = TIMER_CIRCUM;
+      fill.style.strokeDashoffset = TIMER_CIRCUM*(1-ratio);
+      if(ratio>=1) fill.style.stroke = 'var(--done)';
+    }
+    if(text){
+      const m = Math.floor(timerElapsed/60);
+      const s = timerElapsed%60;
+      text.textContent = `${m}:${String(s).padStart(2,'0')}`;
+    }
+  }else{
+    wrap.style.display = 'none';
+  }
+}
+
+function startTimer(){
+  stopTimer();
+  timerElapsed = 0;
+  timerInterval = setInterval(timerTick, 1000);
+  updateTimerUI();
+}
+
 function checkin(){
   state.todayCheckedIn = true;
   state.streak = (state.streak||0) + 1;
   saveState(state);
+  startTimer();
   renderDailyContent();
-  // 启动计时器环
-  const wrap = document.getElementById('timerRingWrap');
-  const fill = document.getElementById('timerRingFill');
-  const text = document.getElementById('timerRingText');
-  if(wrap&&fill&&text){
-    wrap.style.display = 'flex';
-    const totalSec = getDayEstimate()*60;
-    const circum = 163.36; // 2*π*26
-    fill.style.strokeDasharray = circum;
-    fill.style.strokeDashoffset = circum;
-    let elapsed = 0;
-    state._timerInterval = setInterval(()=>{
-      elapsed++;
-      const m = Math.floor(elapsed/60);
-      const s = elapsed%60;
-      text.textContent = `${m}:${String(s).padStart(2,'0')}`;
-      // 环的填充比例
-      const ratio = Math.min(elapsed/totalSec, 1);
-      fill.style.strokeDashoffset = circum*(1-ratio);
-      // 超时变色
-      if(ratio>=1) fill.style.stroke = 'var(--done)';
-    },1000);
-  }
   renderDashboard();
 }
 
@@ -1406,7 +1451,7 @@ function checkout(){
   });
 
   // 停止计时器
-  if(state._timerInterval){clearInterval(state._timerInterval);state._timerInterval=null;}
+  stopTimer();
   const wrap = document.getElementById('timerRingWrap');
   if(wrap) wrap.style.display = 'none';
 
@@ -1471,7 +1516,13 @@ function openQuiz(quiz){
   document.getElementById('btnQuizSkip').onclick = ()=>{
     modal.style.display = 'none';
     const d = getDayData(state.currentDay);
-    const undoneCount = d ? d.tasks.length : 0;
+    // 按实际勾选状态计算未完成数,而不是把全部任务都算成未完成
+    let undoneCount = 0;
+    if(d){
+      d.tasks.forEach((t,i)=>{
+        if(state.todayTaskStatus[`${state.currentDay}-${i}`]!=='done') undoneCount++;
+      });
+    }
     showRolloverConfirm(undoneCount, d);
   };
 
@@ -1553,10 +1604,9 @@ function gradeQuiz(){
 }
 
 function retryQuiz(){
+  // 测验不通过不推进: 留在当天,已勾的任务保留,
+  // 复习教程后重新点"结束学习"即可重测
   document.getElementById('quizModal').style.display = 'none';
-  const d = getDayData(state.currentDay);
-  const undoneCount = d ? d.tasks.length : 0;
-  showRolloverConfirm(undoneCount, d);
 }
 
 function showDayEndChoice(){
@@ -1693,12 +1743,12 @@ function checkRolloverCompletions(){
 }
 
 function skipDay(){
-  // 跳过周末/弹性日
+  // 跳过周末/弹性日: 只标记当天完成,不清空其他天滚存的积压任务
+  stopTimer();
   state.completedDays[state.currentDay] = true;
   state.todayCheckedIn = false;
   state.todayCompleted = false;
   state.todayTaskStatus = {};
-  state.rolloverTasks = [];
   if(state.currentDay < 60){
     state.currentDay++;
   }
