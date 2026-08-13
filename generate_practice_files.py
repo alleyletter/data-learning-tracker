@@ -276,7 +276,7 @@ def generate_day03():
             ws.cell(row=i, column=j, value=val)
     style_data(ws, 2, len(rows) + 1, len(headers))
 
-    add_data_sheet(wb, '靓号数据(备用实战)', ['号码', '位数', '规律类型', '价格(乐元)', '上架状态'], generate_haoid_rows(60))
+    add_data_sheet(wb, '靓号数据(备用实战)', ['靓号ID', '位数', '类别', '价格(乐元)', '购买方式', '赠送VIP'], generate_haoid_rows(60))
 
     path = os.path.join(OUTPUT_DIR, 'day03-筛选与排序.xlsx')
     wb.save(path)
@@ -398,7 +398,7 @@ def generate_day05():
         ws.cell(row=i, column=4, value=stock)
     style_data(ws, 2, len(products) + 1, len(headers))
 
-    add_data_sheet(wb, '靓号定价(备用实战)', ['号码', '规律类型', '价格(乐元)', '上架状态'],
+    add_data_sheet(wb, '靓号定价(备用实战)', ['靓号ID', '类别', '价格(乐元)', '购买方式'],
                    [[r[0], r[2], r[3], r[4]] for r in generate_haoid_rows(60)])
 
     path = os.path.join(OUTPUT_DIR, 'day05-数据验证与条件格式.xlsx')
@@ -477,7 +477,7 @@ def generate_day09():
         '6. =SUMIF(分类列,"电子产品",金额列) → 电子产品总销售额',
         '7. =COUNTIFS(分类列,"电子产品",城市列,"北京") → 北京电子产品订单数',
         '8. =SUMIFS(金额列,分类列,"服装鞋帽",金额列,">500") → 服装类且>500的销售额',
-        '【备用实战】"靓号库(备用实战)"工作表模拟靓号库，练COUNTIF统计规律类型用',
+        '【备用实战】"靓号库(备用实战)"工作表模拟靓号库，练COUNTIF统计类别(规律类型)用',
         '',
         '【思考】哪个分类的平均客单价最高？用AVERAGEIF试试。（答案见下方折叠区）',
     ], thinking=DAY09_THINKING)
@@ -507,7 +507,7 @@ def generate_day09():
     ws.column_dimensions['G'].width = 30
     ws.column_dimensions['H'].width = 20
 
-    add_data_sheet(wb, '靓号库(备用实战)', ['号码', '位数', '规律类型', '价格(乐元)', '上架状态'], generate_haoid_rows(80))
+    add_data_sheet(wb, '靓号库(备用实战)', ['靓号ID', '位数', '类别', '价格(乐元)', '购买方式', '赠送VIP'], generate_haoid_rows(80))
 
     path = os.path.join(OUTPUT_DIR, 'day09-统计函数.xlsx')
     wb.save(path)
@@ -605,7 +605,7 @@ def generate_day11():
         '【TEXT 格式化】',
         '6. 在I列，把日期列格式化为中文：=TEXT(C2,"yyyy年mm月dd日")',
         '7. 在J列，显示星期几：=TEXT(C2,"aaaa")（中文版Excel/WPS用aaaa；英文版Excel/WPS用"dddd"）',
-        '【备用实战】"靓号规律判断(备用实战)"工作表只给号码，用函数在空白列判断规律类型',
+        '【备用实战】"靓号规律判断(备用实战)"工作表只给号码，用函数在空白列判断类别(规律类型)',
         '',
         '【综合】试着用IF+LEFT组合：如果SKU前3位是"ELC"就显示"电子产品"，否则显示"其他"',
     ], thinking=DAY11_THINKING)
@@ -639,7 +639,7 @@ def generate_day11():
     style_data(ws, 2, len(products) + 1, len(headers))
 
     ws_judge = wb.create_sheet('靓号规律判断(备用实战)')
-    style_header(ws_judge, ['号码', '规律类型(用函数判断)'], [18, 24])
+    style_header(ws_judge, ['靓号ID', '类别(用函数判断)'], [18, 24])
     haoid_nums = [r[0] for r in generate_haoid_rows(30)]
     for i, num in enumerate(haoid_nums, 2):
         ws_judge.cell(row=i, column=1, value=num)
@@ -936,14 +936,17 @@ def generate_day19_reference():
 HAOID_PRICE_RANGES = [(10, 49, 15), (50, 99, 35), (100, 180, 35), (181, 500, 15)]  # 引流/主力/利润/展示
 
 def generate_haoid_rows(n=100):
-    """模拟靓号库: 号码/位数/规律类型/价格(乐元)/上架状态"""
+    """模拟靓号库: 列名与真实后台一致(靓号ID/位数/类别/价格/购买方式/赠送VIP)"""
     patterns = ['888', '顺子', '豹子', 'AABB', '普通']
     weights = [20, 8, 5, 12, 55]
+    buy_methods = ['直接购买', '竞拍']
+    vip_gifts = ['无', 'VIP 1个月', 'VIP 3个月', 'VIP 6个月']
     rows = []
     for _ in range(n):
         digits = random.randint(5, 8)
         pattern = random.choices(patterns, weights=weights)[0]
-        num = ''.join(str(random.randint(0, 9)) for _ in range(digits))
+        # 首位1-9,避免前导0(CSV被Excel打开时前导0会被丢掉)
+        num = str(random.randint(1, 9)) + ''.join(str(random.randint(0, 9)) for _ in range(digits - 1))
         if pattern == '888' and digits >= 4:
             num = num[:-3] + '888'
         elif pattern == '顺子':
@@ -958,8 +961,13 @@ def generate_haoid_rows(n=100):
             num = num[:-4] + d1 + d1 + d2 + d2
         lo, hi, _ = random.choices(HAOID_PRICE_RANGES, weights=[r[2] for r in HAOID_PRICE_RANGES])[0]
         price = round(random.uniform(lo, hi))
-        status = random.choices(['在售', '已售', '下架'], weights=[60, 30, 10])[0]
-        rows.append([num, digits, pattern, price, status])
+        status = random.choices(['在售', '已售'], weights=[65, 35])[0]
+        if status == '在售':
+            method, vip = '未售', '无'
+        else:
+            method = random.choice(buy_methods)
+            vip = random.choice(vip_gifts)
+        rows.append([num, digits, pattern, price, method, vip])
     return rows
 
 def generate_activity_rows():
@@ -1020,9 +1028,9 @@ def generate_activity_detail_rows(n=300):
 def generate_backup_csvs():
     """备用数据CSV(阶段三AI辅助分析+阶段四项目备用)"""
     import csv as csv_mod
-    haoid = [['号码', '位数', '规律类型', '价格(乐元)', '上架状态', '上架日期']]
+    haoid = [['靓号ID', '位数', '类别(规律类型)', '价格(乐元)', '购买方式', '赠送VIP', '上架日期']]
     for row in generate_haoid_rows(120):
-        haoid.append(row[:5] + [f'2026-{random.randint(1, 8):02d}-{random.randint(1, 28):02d}'])
+        haoid.append(row[:6] + [f'2026-{random.randint(1, 8):02d}-{random.randint(1, 28):02d}'])
     with open(os.path.join(OUTPUT_DIR, '备用数据-靓号库.csv'), 'w', newline='', encoding='utf-8-sig') as f:
         csv_mod.writer(f).writerows(haoid)
     print('  [OK] 备用数据-靓号库.csv')
