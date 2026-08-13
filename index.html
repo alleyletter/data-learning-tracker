@@ -771,6 +771,21 @@ function loadState(){
           }
         });
       }
+      // 修复旧版遗留的"幽灵滚存": 滚存任务没有来源天账本的情况
+      if(s.rolloverTasks && s.rolloverTasks.length>0){
+        const countsByDay = {};
+        s.rolloverTasks.forEach(r=>{ countsByDay[r.fromDay] = (countsByDay[r.fromDay]||0)+1; });
+        Object.keys(countsByDay).forEach(fromDay => {
+          if(s.completedDays && s.completedDays[fromDay]){
+            // 来源天已经完成: 残留的滚存任务是冗余数据,直接清掉
+            s.rolloverTasks = s.rolloverTasks.filter(r => r.fromDay != fromDay);
+            if(s.rolloverSources) delete s.rolloverSources[fromDay];
+          } else if(s.rolloverSources && !s.rolloverSources[fromDay]){
+            // 来源天未完成但没有账本: 补账本,补做后能正常标记该天完成
+            s.rolloverSources[fromDay] = {done: 0, total: countsByDay[fromDay]};
+          }
+        });
+      }
       return s;
     }
   }catch(e){}
@@ -1020,7 +1035,7 @@ function renderDailyContent(){
 
   // Rollover任务
   if(state.rolloverTasks.length>0){
-    html += `<div class="section-label">📌 昨天未完成的任务</div><ul class="task-list">`;
+    html += `<div class="section-label">📌 积压未完成的任务</div><ul class="task-list">`;
     state.rolloverTasks.forEach((t,i)=>{
       html += renderTaskItem(t, `rollover-${i}`, true);
     });
