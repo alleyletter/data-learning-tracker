@@ -65,7 +65,7 @@ def add_instruction_sheet(wb, title, instructions, thinking=None):
 def add_thinking(ws, start_row, questions):
     """在指定工作表追加思考题: 答案行默认折叠,点左侧+号展开查看"""
     r = start_row
-    c = ws.cell(row=r, column=1, value='📝 思考题（先自己想想，点左侧+号展开答案）')
+    c = ws.cell(row=r, column=1, value='思考题（先自己想想，点左侧+号展开答案）')
     c.font = Font(name='微软雅黑', bold=True, size=11, color='E67E22')
     r += 1
     for qi, (q, a) in enumerate(questions, 1):
@@ -73,7 +73,7 @@ def add_thinking(ws, start_row, questions):
         r += 1
         ans_start = r
         for j, line in enumerate(a.split('\n')):
-            c = ws.cell(row=r, column=1, value=('💡 答案: ' if j == 0 else '') + line)
+            c = ws.cell(row=r, column=1, value=('答案: ' if j == 0 else '') + line)
             c.font = Font(name='微软雅黑', size=10.5, color='2E7D32')
             c.alignment = Alignment(wrap_text=True)
             r += 1
@@ -87,12 +87,12 @@ def add_thinking_sheet(wb, questions):
     """独立"思考题"工作表(用于没有练习说明表的文件)"""
     ws = wb.create_sheet('思考题')
     ws.column_dimensions['A'].width = 80
-    ws.cell(row=1, column=1, value='📝 思考题（先自己想想，点左侧+号展开答案）').font = Font(name='微软雅黑', bold=True, size=13, color='E67E22')
+    ws.cell(row=1, column=1, value='思考题（先自己想想，点左侧+号展开答案）').font = Font(name='微软雅黑', bold=True, size=13, color='E67E22')
     for qi, (q, a) in enumerate(questions, 1):
         ws.cell(row=2 + (qi - 1) * 4, column=1, value=f'思考题{qi}: {q}').font = Font(name='微软雅黑', bold=True, size=11)
         ans_start = 3 + (qi - 1) * 4
         for j, line in enumerate(a.split('\n')):
-            c = ws.cell(row=ans_start + j, column=1, value=('💡 答案: ' if j == 0 else '') + line)
+            c = ws.cell(row=ans_start + j, column=1, value=('答案: ' if j == 0 else '') + line)
             c.font = Font(name='微软雅黑', size=10.5, color='2E7D32')
             c.alignment = Alignment(wrap_text=True)
         ws.row_dimensions.group(ans_start, ans_start + len(a.split('\n')) - 1, outline_level=1, hidden=True)
@@ -828,7 +828,7 @@ def generate_sql_cheatsheet():
         for c in range(1, 4):
             ws3.cell(row=i, column=c).border = THIN_BORDER
 
-    ws3.cell(row=12, column=1, value='💡 记忆口诀：FWGH SOL — From Where Group Having Select Order Limit').font = Font(name='微软雅黑', size=10, color='E74C3C')
+    ws3.cell(row=12, column=1, value='记忆口诀：FWGH SOL — From Where Group Having Select Order Limit').font = Font(name='微软雅黑', size=10, color='E74C3C')
 
     add_thinking_sheet(wb, SQL_THINKING)
 
